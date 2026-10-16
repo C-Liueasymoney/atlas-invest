@@ -1,2 +1,4 @@
-import { CatalogPage } from '@/components/catalog';
-export default function Indicators(){return <CatalogPage/>;}
+import { CatalogPage } from "@/components/catalog";
+export default function Indicators() {
+  return <CatalogPage />;
+}

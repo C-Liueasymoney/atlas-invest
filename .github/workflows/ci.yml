@@ -1,20 +1,54 @@
 name: CI
 on: [push, pull_request]
+permissions:
+  contents: read
 jobs:
   web:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          {
+            POSTGRES_USER: atlas,
+            POSTGRES_PASSWORD: atlas_ci,
+            POSTGRES_DB: atlas_test,
+          }
+        ports: ["5432:5432"]
+        options: --health-cmd='pg_isready -U atlas' --health-interval=5s --health-retries=10
+    env:
+      DATABASE_URL: postgresql://atlas:atlas_ci@127.0.0.1:5432/atlas_test
+      TEST_DATABASE_URL: postgresql://atlas:atlas_ci@127.0.0.1:5432/atlas_test
+      DATA_MODE: demo
+      LOCAL_DEV_NO_AUTH: "false"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: '22', cache: npm }
+        with: { node-version: "22", cache: npm }
       - run: npm ci
+      - run: npm run db:migrate && npm run db:seed
       - run: npm run lint && npm run typecheck && npm test && npm run build
-        env: { DATA_MODE: demo, LOCAL_DEV_NO_AUTH: 'false' }
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
   collector:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          {
+            POSTGRES_USER: atlas,
+            POSTGRES_PASSWORD: atlas_ci,
+            POSTGRES_DB: atlas_test,
+          }
+        ports: ["5432:5432"]
+        options: --health-cmd='pg_isready -U atlas' --health-interval=5s --health-retries=10
+    env:
+      TEST_DATABASE_URL: postgresql://atlas:atlas_ci@127.0.0.1:5432/atlas_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: '3.13' }
-      - run: python -m pip install -e 'services/collector[test]'
+        with: { python-version: "3.12" }
+      - run: python -m pip install -r services/collector/requirements.lock
+      - run: python -m pip install --no-deps -e 'services/collector[test]'
       - run: python -m pytest services/collector/tests

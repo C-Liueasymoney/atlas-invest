@@ -1,10 +1,195 @@
-'use client';
-import Link from 'next/link';
-import { useState } from 'react';
-import { ArrowDown, ArrowUp, Plus, Star, Trash2 } from 'lucide-react';
-import { api, json, Series, useRemote } from './api';
-import { ActionFeedback, Empty, ErrorNotice, PageHeading, useAction } from './ui';
-import { IndicatorTable } from './market';
-type Watchlist={id:string;name:string;items:string[]};
-export function Watchlists(){const remote=useRemote<{items:Watchlist[]}>('/api/v1/watchlists');const catalog=useRemote<{items:Series[]}>('/api/v1/catalog');const [selected,setSelected]=useState('');const [seriesId,setSeriesId]=useState('');const [name,setName]=useState('');const action=useAction();const list=remote.data?.items.find(l=>l.id===selected)||remote.data?.items[0];async function changeOrder(index:number,delta:number){if(!list)return;const next=[...list.items];[next[index],next[index+delta]]=[next[index+delta],next[index]];await action.run(async()=>{await api(`/api/v1/watchlists/${list.id}/items`,json('PUT',{seriesIds:next}));remote.refresh();},'顺序已保存');}
-return <><PageHeading eyebrow="FOCUS ON WHAT MATTERS" title="观察列表" description="把值得持续关注的指标放在一起。"/><ErrorNotice message={remote.error} retry={remote.refresh}/><ActionFeedback action={action}/><div className="watchlists-layout"><aside className="panel"><h2><Star size={17}/> 我的列表</h2><div className="watchlist-menu">{remote.data?.items.map(l=><button className={list?.id===l.id?'selected':''} onClick={()=>setSelected(l.id)} key={l.id}>{l.name}<span>{l.items.length}</span></button>)}</div><form onSubmit={e=>{e.preventDefault();void action.run(async()=>{const created=await api<Watchlist>('/api/v1/watchlists',json('POST',{name}));setSelected(created.id);setName('');remote.refresh();},'列表已创建');}}><label>新建列表<input required aria-label="新建列表名称" value={name} onChange={e=>setName(e.target.value)} placeholder="例如：利率与汇率"/></label><button disabled={action.busy}><Plus size={14}/>创建列表</button></form></aside><section className="panel"><div className="panel-heading"><div><h2>{list?.name||'开始建立你的观察列表'}</h2><p>排序与收藏会保存到你的研究空间。</p></div></div>{list?<><form className="inline-form" onSubmit={e=>{e.preventDefault();void action.run(async()=>{await api(`/api/v1/watchlists/${list.id}/items`,json('POST',{seriesId}));remote.refresh();},'指标已添加');}}><select required aria-label="添加到观察列表的指标" value={seriesId} onChange={e=>setSeriesId(e.target.value)}><option value="">选择指标…</option>{catalog.data?.items.filter(s=>!list.items.includes(s.id)).map(s=><option key={s.id} value={s.id}>{s.nameZh}</option>)}</select><button disabled={action.busy}><Plus size={14}/>添加指标</button></form>{list.items.length?<><IndicatorTable ids={list.items}/><div className="watchlist-sort">{list.items.map((id,i)=><div key={id}><Link href={`/indicators/${id}`}>{catalog.data?.items.find(s=>s.id===id)?.nameZh||id}</Link><div className="actions"><button aria-label={`上移 ${id}`} className="icon-button" disabled={i===0||action.busy} onClick={()=>changeOrder(i,-1)}><ArrowUp size={14}/></button><button aria-label={`下移 ${id}`} className="icon-button" disabled={i===list.items.length-1||action.busy} onClick={()=>changeOrder(i,1)}><ArrowDown size={14}/></button><button aria-label={`移除 ${id}`} className="icon-button danger" disabled={action.busy} onClick={()=>action.run(async()=>{await api(`/api/v1/watchlists/${list.id}/items/${id}`,json('DELETE'));remote.refresh();},'已从列表移除')}><Trash2 size={14}/></button></div></div>)}</div></>:<Empty>这个列表还没有指标。选择上方指标开始观察。</Empty>}</>:<Empty>从左侧创建第一个观察列表。</Empty>}</section></div></>;}
+"use client";
+import Link from "next/link";
+import { useState } from "react";
+import { ArrowDown, ArrowUp, Plus, Star, Trash2 } from "lucide-react";
+import { api, json, Series, useRemote } from "./api";
+import {
+  ActionFeedback,
+  Empty,
+  ErrorNotice,
+  PageHeading,
+  useAction,
+} from "./ui";
+import { IndicatorTable } from "./market";
+type Watchlist = { id: string; name: string; items: string[] };
+export function Watchlists() {
+  const remote = useRemote<{ items: Watchlist[] }>("/api/v1/watchlists");
+  const catalog = useRemote<{ items: Series[] }>("/api/v1/catalog");
+  const [selected, setSelected] = useState("");
+  const [seriesId, setSeriesId] = useState("");
+  const [name, setName] = useState("");
+  const action = useAction();
+  const list =
+    remote.data?.items.find((l) => l.id === selected) || remote.data?.items[0];
+  async function changeOrder(index: number, delta: number) {
+    if (!list) return;
+    const next = [...list.items];
+    [next[index], next[index + delta]] = [next[index + delta], next[index]];
+    await action.run(async () => {
+      await api(
+        `/api/v1/watchlists/${list.id}/items`,
+        json("PUT", { seriesIds: next }),
+      );
+      remote.refresh();
+    }, "顺序已保存");
+  }
+  return (
+    <>
+      <PageHeading
+        eyebrow="FOCUS ON WHAT MATTERS"
+        title="观察列表"
+        description="把值得持续关注的指标放在一起。"
+      />
+      <ErrorNotice message={remote.error} retry={remote.refresh} />
+      <ActionFeedback action={action} />
+      <div className="watchlists-layout">
+        <aside className="panel">
+          <h2>
+            <Star size={17} /> 我的列表
+          </h2>
+          <div className="watchlist-menu">
+            {remote.data?.items.map((l) => (
+              <button
+                className={list?.id === l.id ? "selected" : ""}
+                onClick={() => setSelected(l.id)}
+                key={l.id}
+              >
+                {l.name}
+                <span>{l.items.length}</span>
+              </button>
+            ))}
+          </div>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void action.run(async () => {
+                const created = await api<Watchlist>(
+                  "/api/v1/watchlists",
+                  json("POST", { name }),
+                );
+                setSelected(created.id);
+                setName("");
+                remote.refresh();
+              }, "列表已创建");
+            }}
+          >
+            <label>
+              新建列表
+              <input
+                required
+                aria-label="新建列表名称"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="例如：利率与汇率"
+              />
+            </label>
+            <button disabled={action.busy}>
+              <Plus size={14} />
+              创建列表
+            </button>
+          </form>
+        </aside>
+        <section className="panel">
+          <div className="panel-heading">
+            <div>
+              <h2>{list?.name || "开始建立你的观察列表"}</h2>
+              <p>排序与收藏会保存到你的研究空间。</p>
+            </div>
+          </div>
+          {list ? (
+            <>
+              <form
+                className="inline-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void action.run(async () => {
+                    await api(
+                      `/api/v1/watchlists/${list.id}/items`,
+                      json("POST", { seriesId }),
+                    );
+                    remote.refresh();
+                  }, "指标已添加");
+                }}
+              >
+                <select
+                  required
+                  aria-label="添加到观察列表的指标"
+                  value={seriesId}
+                  onChange={(e) => setSeriesId(e.target.value)}
+                >
+                  <option value="">选择指标…</option>
+                  {catalog.data?.items
+                    .filter((s) => !list.items.includes(s.id))
+                    .map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.nameZh}
+                      </option>
+                    ))}
+                </select>
+                <button disabled={action.busy}>
+                  <Plus size={14} />
+                  添加指标
+                </button>
+              </form>
+              {list.items.length ? (
+                <>
+                  <IndicatorTable ids={list.items} />
+                  <div className="watchlist-sort">
+                    {list.items.map((id, i) => (
+                      <div key={id}>
+                        <Link href={`/indicators/${id}`}>
+                          {catalog.data?.items.find((s) => s.id === id)
+                            ?.nameZh || id}
+                        </Link>
+                        <div className="actions">
+                          <button
+                            aria-label={`上移 ${id}`}
+                            className="icon-button"
+                            disabled={i === 0 || action.busy}
+                            onClick={() => changeOrder(i, -1)}
+                          >
+                            <ArrowUp size={14} />
+                          </button>
+                          <button
+                            aria-label={`下移 ${id}`}
+                            className="icon-button"
+                            disabled={
+                              i === list.items.length - 1 || action.busy
+                            }
+                            onClick={() => changeOrder(i, 1)}
+                          >
+                            <ArrowDown size={14} />
+                          </button>
+                          <button
+                            aria-label={`移除 ${id}`}
+                            className="icon-button danger"
+                            disabled={action.busy}
+                            onClick={() =>
+                              action.run(async () => {
+                                await api(
+                                  `/api/v1/watchlists/${list.id}/items/${id}`,
+                                  json("DELETE"),
+                                );
+                                remote.refresh();
+                              }, "已从列表移除")
+                            }
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <Empty>这个列表还没有指标。选择上方指标开始观察。</Empty>
+              )}
+            </>
+          ) : (
+            <Empty>从左侧创建第一个观察列表。</Empty>
+          )}
+        </section>
+      </div>
+    </>
+  );
+}

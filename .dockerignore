@@ -1,0 +1,15 @@
+.git
+node_modules
+**/node_modules
+**/.next
+**/.atlas
+.env
+.env.*
+!.env.example
+**/.venv
+.venv
+**/__pycache__
+**/.pytest_cache
+**/*.log
+**/test-results
+**/playwright-report

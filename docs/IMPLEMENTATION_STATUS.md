@@ -43,3 +43,13 @@ M1 commit `4242b13` — `feat(data): add secure provider control and normalized 
 - API配置中心凭据确认/测试连接/预算/启停/符号路由/配置导入导出均接内部API。已修复localhost与127.0.0.1开发访问的同源判断。
 - 验证：lint/typecheck/build通过；UI注册表3项测试通过；浏览器看板保存刷新、配置诊断导出、手机导航/无横向溢出通过。桌面/移动截图人工检查。
 - 预警写接口、研究导入在M3继续；M2对应E2E以看板/配置/手机三条为范围。无新迁移。
+
+M2 commit `cec3e78` — `feat(dashboard): add editable research widgets and provider configuration UI`；GitHub push仍失败（HTTPS缺凭据），本地保留。
+
+## Milestone 3 — 规则与数据管理
+- 完成五类预警规则、穿越重新触发/冷却/站内事件去重，规则与状态事务保存。网页同步后与行情读取时评估，另提供手动评估。Python离线job暂不自行评估，故不保证后台即时提醒。
+- CSV/XLSX上传→列映射→统计期/单位/来源校验→限时预览→确认导入，官方域名白名单、不抓取任意URL、公式/宏/ZIP膨胀拒绝，按文件hash幂等写入。0002仅新增data_imports.metadata列，回退可保留该列，无需删除数据。
+- 支持安全Markdown笔记/标签/事件日期、带DEMO/来源的CSV/JSON导出（提前实现部分P1）；Dockerfile/私有启动保护、CI真实PostgreSQL与Playwright。
+- 独立审查回归修复：空字符串FRED禁止转0、未来Gold时间拒绝、禁用路由阻止同步、DFII10不得映射DGS10、百分比预警保持active状态、国内价差继承最旧输入陈旧状态、全空观测asOf=null、对齐后选比较基期、AV配置导入也限制25次/日。
+- 最新验证：45项Web测试全部通过（含真实PostgreSQL凭据加密/owner隔离/导入事务/禁用路由），lint、strict typecheck、production build通过；4条真实内部API Chromium E2E通过。没有把本地结果视为GitHubCI。
+- 已知依赖：开发工具链5项高危报告（Next ESLint->braces）；生产ExcelJS->uuid 2项moderate，暂无干净兼容修复，严格限制上传体积与结构；没有使用force降级。Docker镜像配置已提供，本机无Docker，因此未实际构建容器。
