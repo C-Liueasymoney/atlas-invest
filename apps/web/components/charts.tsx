@@ -280,12 +280,10 @@ export function ChartCanvas({
       .sort();
     const fitRange = () => {
       if (dates.length > 1 && dates[0] !== dates[dates.length - 1])
-        chart
-          .timeScale()
-          .setVisibleRange({
-            from: dates[0] as Time,
-            to: dates[dates.length - 1] as Time,
-          });
+        chart.timeScale().setVisibleRange({
+          from: dates[0] as Time,
+          to: dates[dates.length - 1] as Time,
+        });
       else chart.timeScale().fitContent();
     };
     fitRange();

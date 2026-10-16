@@ -82,6 +82,13 @@ export async function saveCredential(id: string, key: string | null) {
         key.slice(-4),
       ],
     );
+  await query("DELETE FROM provider_cache WHERE provider_id=$1", [id]);
+  await saveHealth({
+    providerId: id,
+    status: key ? "unavailable" : "not_configured",
+    checkedAt: new Date().toISOString(),
+    message: key ? "凭据已更新，请重新测试连接" : "凭据已删除",
+  });
   await audit("credential." + (key ? "save" : "delete"), id);
 }
 export async function providerConfig(id: string) {

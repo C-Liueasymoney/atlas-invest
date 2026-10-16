@@ -4,7 +4,7 @@ import { body, parse, json } from "./api-helpers";
 import { AppError } from "./errors";
 import { workspace } from "./db/workspace";
 import { seriesById } from "./catalog";
-import { seriesData, quote } from "./data";
+import { seriesData, quote, importsForSeries } from "./data";
 import { previewImport, commitImport, csvCell, validDate } from "./imports";
 import { audit } from "./providers/repository";
 import type { Note } from "./types";
@@ -160,7 +160,14 @@ export async function researchApi(
         ? data.points
         : [{ time: data.asOf ?? "", value: data.value }];
     if (format === "json")
-      return json({ ...data, points, exportedAt: new Date().toISOString() });
+      return json({
+        ...data,
+        points,
+        exportedAt: new Date().toISOString(),
+        ...(s.kind === "imported"
+          ? { importBatches: await importsForSeries(id) }
+          : {}),
+      });
     const headers = [
       "seriesId",
       "time",

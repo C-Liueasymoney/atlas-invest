@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+import { collectorCommand } from "../collector";
 import { z } from "zod";
 import { AppError } from "../errors";
 import { controlled } from "./controller";
@@ -42,8 +44,6 @@ export async function upstreamJson(
     );
   if (r.status === 429)
     throw new AppError("SOURCE_RATE_LIMITED", "供应商请求额度耗尽", 429);
-  if (!r.ok)
-    throw new AppError("SOURCE_UNAVAILABLE", `上游 HTTP ${r.status}`, 503);
   let data: unknown;
   try {
     data = await r.json();
@@ -53,6 +53,19 @@ export async function upstreamJson(
   const parsed = z.record(z.string(), z.unknown()).safeParse(data);
   if (parsed.success) {
     const d = parsed.data;
+    const detail = String(
+      d.error_message ?? d.Information ?? d["Error Message"] ?? "",
+    );
+    if (
+      /invalid.*api.?key|api.?key.*(?:invalid|not registered|missing)|value for variable api_key/i.test(
+        detail,
+      )
+    )
+      throw new AppError(
+        "SOURCE_UNAUTHORIZED",
+        "上游拒绝 API Key，请检查凭据",
+        401,
+      );
     if (d.Note || d.Information)
       throw new AppError(
         "SOURCE_RATE_LIMITED",
@@ -66,6 +79,8 @@ export async function upstreamJson(
         401,
       );
   }
+  if (!r.ok)
+    throw new AppError("SOURCE_UNAVAILABLE", `上游 HTTP ${r.status}`, 503);
   return {
     data,
     maxAgeSeconds: Number(
@@ -175,7 +190,15 @@ export async function fetchSample(
     throw new AppError("SOURCE_NOT_CONFIGURED", "请配置 FRED_API_KEY", 409);
   return controlled(
     providerId,
-    JSON.stringify([symbol, from, to]),
+    JSON.stringify([
+      symbol,
+      from,
+      to,
+      createHash("sha256")
+        .update((await credential(providerId)).key ?? "public")
+        .digest("hex")
+        .slice(0, 16),
+    ]),
     async () => {
       let url: URL;
       let parser: (data: unknown) => NormalizedSample;
@@ -249,30 +272,37 @@ export async function symbolSearch(providerId: string, q: string) {
         "请配置 ALPHA_VANTAGE_API_KEY",
         409,
       );
-    return controlled(providerId, "search:" + q, async () => {
-      const url = new URL("https://www.alphavantage.co/query");
-      url.searchParams.set("function", "SYMBOL_SEARCH");
-      url.searchParams.set("keywords", q);
-      url.searchParams.set("apikey", c.key!);
-      const { data } = await upstreamJson(url);
-      const parsed = z
-        .object({ bestMatches: z.array(z.record(z.string(), z.string())) })
-        .parse(data);
-      return {
-        value: parsed.bestMatches.map((m) => ({
-          providerId,
-          symbol: m["1. symbol"],
-          name: m["2. name"],
-          market: m["4. region"],
-          assetClass: m["3. type"],
-          unit: m["8. currency"] + "/share",
-          currency: m["8. currency"],
-          priceDefinition: "security",
-          operations: ["quote", "bars"],
-          intervals: ["1d"],
-        })),
-      };
-    });
+    return controlled(
+      providerId,
+      "search:" +
+        createHash("sha256").update(c.key).digest("hex").slice(0, 16) +
+        ":" +
+        q,
+      async () => {
+        const url = new URL("https://www.alphavantage.co/query");
+        url.searchParams.set("function", "SYMBOL_SEARCH");
+        url.searchParams.set("keywords", q);
+        url.searchParams.set("apikey", c.key!);
+        const { data } = await upstreamJson(url);
+        const parsed = z
+          .object({ bestMatches: z.array(z.record(z.string(), z.string())) })
+          .parse(data);
+        return {
+          value: parsed.bestMatches.map((m) => ({
+            providerId,
+            symbol: m["1. symbol"],
+            name: m["2. name"],
+            market: m["4. region"],
+            assetClass: m["3. type"],
+            unit: m["8. currency"] + "/share",
+            currency: m["8. currency"],
+            priceDefinition: "security",
+            operations: ["quote", "bars"],
+            intervals: ["1d"],
+          })),
+        };
+      },
+    );
   }
   return [];
 }
@@ -283,7 +313,41 @@ export async function testConnection(id: string): Promise<Health> {
     interval = "quote",
     symbol = "XAU";
   try {
-    if (id === "alpha_vantage") {
+    if (["akshare_sge", "cftc"].includes(id)) {
+      const seriesId =
+        id === "akshare_sge" ? "SGE_AU9999_D1" : "CFTC_GOLD_NET_SPEC_W";
+      symbol = id === "akshare_sge" ? "Au99.99" : "088691";
+      op = id === "akshare_sge" ? "bars" : "observations";
+      interval = id === "akshare_sge" ? "1d" : "1w";
+      const summary = await controlled(id, "probe:" + seriesId, async () => {
+        const data = await collectorCommand(seriesId, true);
+        const rows = z
+          .array(
+            z.object({
+              trading_date: z.string().optional(),
+              period_date: z.string().optional(),
+            }),
+          )
+          .min(1)
+          .parse(data.records);
+        const latest = rows
+          .flatMap((r) =>
+            r.trading_date || r.period_date
+              ? [r.trading_date || r.period_date!]
+              : [],
+          )
+          .sort()
+          .at(-1);
+        return { value: { asOf: latest ? latest + "T00:00:00Z" : undefined } };
+      });
+      h = {
+        providerId: id,
+        status: "available",
+        checkedAt,
+        sampleDataAsOf: summary.asOf,
+        message: `仅 ${symbol} ${op} 样本已验证；源端观察日期与采集时间分开。`,
+      };
+    } else if (id === "alpha_vantage") {
       symbol = "IBM";
       op = "search";
       interval = "1d";

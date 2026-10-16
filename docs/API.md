@@ -20,8 +20,12 @@ All responses are JSON; errors: `{error:{code,message,requestId}}`. `/api/v1` da
 - GET `/api/series/:id/routes` → `{items:[{providerId,providerSymbol,operation,interval,priority,enabled,constraints:{unit,currency,market,priceDefinition,frequency},mode:'auto'|'fixed'}],reason:string}`; PUT `{routes:[...]}`.
 - POST `/api/providers/:id/sync` `{seriesId?}` → `{status,message,count?}`. Collector writes live PostgreSQL; Demo sync explicitly denied (test connection still real).
 - GET `/api/providers/export` → secret-free `{providers,routes}`; POST `/api/providers/import` same projected schema, keys omitted.
-- POST `/api/v1/imports/preview` multipart file + seriesId + sourceUrl + dateColumn/valueColumn (optional, default date/value) → `{token,columns,rows,count,fileName}`; POST `/commit` `{token,confirm:true}`; no arbitrary source URL fetching.
+- POST `/api/v1/imports/preview` multipart file + seriesId + sourceUrl + statPeriodEnd + unit(可选) + publishedAt(可选) + dateColumn/valueColumn (optional, default date/value) → `{token,columns,rows,count,fileName}`; POST `/commit` `{token,confirm:true}`; no arbitrary source URL fetching.
 - GET/POST `/api/v1/research` list/create `{title,markdown,tags?,seriesIds?,eventDate?}`; PATCH/DELETE `/:id`.
 - GET `/api/v1/export?seriesId=&format=json|csv`.
 
 Demo uses a separate disk JSON store for owner UI preferences only. All Demo market envelopes have `isDemo:true,status:'demo'`; no provider credentials can be stored in Demo. Live uses normalized PostgreSQL. Invalid database connection produces a visible 503, never silent Demo fallback.
+
+- `GET /api/v1/series/:id/stats`：仅日度价格/汇率；最大回撤、252日年化/最近21间隔波动、收益分布与源状态。空样本为null，不对利率/月度数据套用价格风险公式。
+- `GET /api/v1/series/:id/imports`：owner的最近20个导入批次、文件hash、统计期、未知可空的原始发布时间、单位与官方URL。Imported指标JSON导出同时包含importBatches；CSV保留标准逐行统计日期/来源。
+- Quote可带`asOfKind=date|timestamp`。日K/宏观观察期只显示日期，不能把用于标准日期键的UTC午夜显示成源端盘中报价时刻。

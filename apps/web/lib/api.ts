@@ -10,7 +10,7 @@ import { body, parse, json, dateString } from "./api-helpers";
 import { z } from "zod";
 import { AppError, errorResponse } from "./errors";
 import { catalog, seriesById } from "./catalog";
-import { quote, seriesData, compare, stats } from "./data";
+import { quote, seriesData, compare, stats, importsForSeries } from "./data";
 import { researchApi } from "./api-research";
 import { publicProviders, audit } from "./providers/repository";
 import { providerApi } from "./api-providers";
@@ -131,6 +131,8 @@ export async function dispatch(
       if (p[0] === "series" && p[1]) {
         const s = seriesById(p[1]);
         if (p[2] === "metadata") return json(s);
+        if (p[2] === "imports")
+          return json({ items: await importsForSeries(s.id) });
         if (p[2] === "stats") return json(await stats(s.id));
         if (["bars", "observations"].includes(p[2])) {
           if (

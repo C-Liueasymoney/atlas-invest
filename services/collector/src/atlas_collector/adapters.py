@@ -107,6 +107,11 @@ def normalize_sge_quote(payload, fetched_at):
 def fetch(series, start, end, client=None):
     client = client or JsonClient()
     provider, symbol = series['providerId'], series['providerSymbol']
+    if provider == 'cftc':
+        if symbol != '088691':
+            raise CollectorError('unsupported', 'Only the verified COMEX Gold contract 088691 is supported.')
+        from .cftc import fetch_cftc
+        return fetch_cftc(client,start,end)
     if provider == 'fred':
         key = os.getenv('FRED_API_KEY')
         if not key:

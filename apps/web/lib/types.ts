@@ -39,6 +39,7 @@ export interface Quote {
   unit: string;
   currency: string;
   source: Source;
+  asOfKind?: "date" | "timestamp";
   asOf: string | null;
   fetchedAt: string | null;
   status: DataStatus;

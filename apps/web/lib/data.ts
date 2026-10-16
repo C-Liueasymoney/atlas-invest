@@ -1,7 +1,4 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
-import { resolve } from "node:path";
-import { existsSync } from "node:fs";
+import { collectorCommand } from "./collector";
 import fixture from "../fixtures/demo.json";
 import { catalog, seriesById } from "./catalog";
 import { query, demoMode, database } from "./db/client";
@@ -112,7 +109,7 @@ export async function seriesData(
       ? "尚无历史数据，请配置并同步。"
       : !config.enabled
         ? "数据源已停用，保留最后数据。"
-        : "日线/统计观察日；不代表盘中实时。",
+        : "最近交易日/统计观察日；不代表盘中实时。",
   };
 }
 export async function persistSample(
@@ -139,6 +136,7 @@ export async function quote(id: string): Promise<Quote> {
   const s = seriesById(id);
   const base: Quote = {
     seriesId: id,
+    asOfKind: s.kind === "quote" ? "timestamp" : "date",
     value: null,
     previousValue: null,
     unit: s.unit,
@@ -289,39 +287,13 @@ export async function syncSeries(id: string) {
     throw new AppError("SOURCE_UNAVAILABLE", "没有启用且兼容的数据路由", 409);
   if (!(await providerConfig(route.providerId)).enabled)
     throw new AppError("SOURCE_UNAVAILABLE", "数据源已停用");
-  if (s.providerId === "akshare_sge") {
-    const root = resolve(process.cwd(), "../.."),
-      local = resolve(root, "services/collector/.venv/bin/python");
-    const python =
-      process.env.COLLECTOR_PYTHON || (existsSync(local) ? local : "python3");
-    const c = await credential(s.providerId);
-    void c;
-    try {
-      const { stdout } = await promisify(execFile)(
-        python,
-        ["-m", "atlas_collector", "sync", "--series", id],
-        {
-          cwd: root,
-          env: {
-            ...process.env,
-            PYTHONPATH: resolve(root, "services/collector/src"),
-          },
-          timeout: 120000,
-          maxBuffer: 1024 * 1024,
-        },
-      );
-      return {
-        status: "success",
-        message: "采集器已完成，详情见 ingest_runs",
-        result: JSON.parse(stdout),
-      };
-    } catch {
-      throw new AppError(
-        "SOURCE_UNAVAILABLE",
-        "采集器运行失败，请检查 Python 环境及 ingest_runs；旧数据保留",
-        503,
-      );
-    }
+  if (["akshare_sge", "cftc"].includes(route.providerId)) {
+    const result = await collectorCommand(id);
+    return {
+      status: "success",
+      message: "采集器已完成，详情见 ingest_runs",
+      result,
+    };
   }
   const year = new Date();
   year.setUTCFullYear(year.getUTCFullYear() - 3);
@@ -338,7 +310,42 @@ export async function syncSeries(id: string) {
   };
 }
 export async function stats(id: string) {
+  const s = seriesById(id);
+  if (s.frequency !== "1d" || !(s.kind === "ohlc" || id === "FX_USDCNY_D1"))
+    throw new AppError(
+      "UNSUPPORTED_INTERVAL",
+      "历史风险统计目前仅支持日度正价格/汇率，不用于利率或月度指标",
+    );
   const d = await seriesData(id);
-  return riskStats(d.points.flatMap((p) => (p.value ? [p.value] : [])));
+  return {
+    ...riskStats(d.points.flatMap((p) => (p.value ? [p.value] : []))),
+    source: d.source,
+    asOf: d.asOf,
+    fetchedAt: d.fetchedAt,
+    status: d.status,
+    isDemo: d.isDemo,
+    observationBasis:
+      "按有效日度观察点计算，年化假设252个交易日，不预测未来风险",
+  };
 }
 export { catalog };
+
+export async function importsForSeries(id: string) {
+  const s = seriesById(id);
+  if (s.kind !== "imported") return [];
+  if (demoMode()) return [];
+  return query<{
+    id: string;
+    fileName: string;
+    fileSha256: string;
+    statPeriodEnd: string;
+    releasedAt: Date | null;
+    importedAt: Date;
+    sourceUrl: string;
+    rowCount: number;
+    metadata: Record<string, unknown>;
+  }>(
+    `SELECT id,file_name AS "fileName",file_sha256 AS "fileSha256",stat_period_end::text AS "statPeriodEnd",released_at AS "releasedAt",imported_at AS "importedAt",source_url AS "sourceUrl",row_count AS "rowCount",metadata FROM data_imports WHERE dataset_type=$1 AND owner_id=$2 ORDER BY imported_at DESC LIMIT 20`,
+    [id, "00000000-0000-4000-8000-000000000001"],
+  );
+}

@@ -11,6 +11,8 @@ import {
   PageHeading,
   useAction,
 } from "./ui";
+import { ImportHistory } from "./provenance";
+import { RiskPanel } from "./risk";
 import { LatestQuoteDetails } from "./market";
 import { PriceChart } from "./charts";
 export function CatalogPage() {
@@ -163,6 +165,10 @@ export function IndicatorDetail({ id }: { id: string }) {
               </div>
               <PriceChart seriesId={id} range="3Y" />
             </section>
+            {s.kind === "imported" && <ImportHistory seriesId={s.id} />}
+            {(s.kind === "ohlc" || s.id === "FX_USDCNY_D1") && (
+              <RiskPanel seriesId={s.id} />
+            )}
             <section className="panel metadata-panel">
               <h2>数据口径与研究说明</h2>
               <dl>

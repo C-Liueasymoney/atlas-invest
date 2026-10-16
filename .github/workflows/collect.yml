@@ -1,11 +1,11 @@
 name: Collect real upstream data
 on:
   schedule:
-    - cron: '20 21 * * 1-5'
+    - cron: "20 21 * * 1-5"
   workflow_dispatch:
     inputs:
       series:
-        description: 'Optional catalog series ID; blank collects all supported P0 series'
+        description: "Optional catalog series ID; blank collects all supported P0 series"
         required: false
         type: string
 permissions:
@@ -26,7 +26,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
           cache: pip
           cache-dependency-path: services/collector/requirements.lock
       - run: python -m pip install -r services/collector/requirements.lock
@@ -37,10 +37,10 @@ jobs:
           import json, os, subprocess, sys
           if not os.environ.get('DATABASE_URL'):
               sys.exit('Configure DATABASE_URL repository secret after applying migrations and catalog seed.')
-          supported = {'akshare_sge', 'frankfurter', 'gold_api', 'fred'}
+          supported = {'akshare_sge', 'frankfurter', 'gold_api', 'fred', 'cftc'}
           catalog = json.load(open('config/indicators.json'))
           wanted = os.environ.get('REQUESTED_SERIES', '').strip()
-          jobs = [s for s in catalog if s['providerId'] in supported and s.get('enabled', True) and (not wanted or s['id'] == wanted)]
+          jobs = [s for s in catalog if s['providerId'] in supported and s.get('enabled', True) and (not wanted or s['id'] == wanted) and (s['providerId'] != 'cftc' or wanted == s['id'])]
           if not jobs:
               sys.exit('No supported enabled catalog series matches the request.')
           failures = []

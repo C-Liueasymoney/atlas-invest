@@ -1,10 +1,12 @@
 # 实施状态
 
+**当前：V1核心可运行并已验证；严格规格尚未全部验收，M4部分完成。GitHub推送受本机凭据阻塞。**
+
 以各阶段实际命令输出为准；不把本地 build 视为 GitHub CI 成功。
 
-## Milestone 0 — 进行中
+## Milestone 0 — 已提交
 初始化工程、规范化数据库、元数据 catalog、Next.js shell、Python 包、CI。
-环境暂缺 Docker/PostgreSQL，使用嵌入式 PostgreSQL 兼容引擎验证迁移；尚未验证外部 PostgreSQL 服务。
+初始环境无 Docker/PostgreSQL，先以PGlite验证迁移；M1起已启动仓库本地PostgreSQL18临时服务完成集成验证，系统服务未修改。Docker镜像未实际构建。
 
 ## 后续阶段
 1. Provider 配置中心与真实采集。
@@ -53,3 +55,24 @@ M2 commit `cec3e78` — `feat(dashboard): add editable research widgets and prov
 - 独立审查回归修复：空字符串FRED禁止转0、未来Gold时间拒绝、禁用路由阻止同步、DFII10不得映射DGS10、百分比预警保持active状态、国内价差继承最旧输入陈旧状态、全空观测asOf=null、对齐后选比较基期、AV配置导入也限制25次/日。
 - 最新验证：45项Web测试全部通过（含真实PostgreSQL凭据加密/owner隔离/导入事务/禁用路由），lint、strict typecheck、production build通过；4条真实内部API Chromium E2E通过。没有把本地结果视为GitHubCI。
 - 已知依赖：开发工具链5项高危报告（Next ESLint->braces）；生产ExcelJS->uuid 2项moderate，暂无干净兼容修复，严格限制上传体积与结构；没有使用force降级。Docker镜像配置已提供，本机无Docker，因此未实际构建容器。
+
+M3 commit `802d295` — `feat(alerts): add persistent rules, validated imports and private deployment checks`；GitHub push仍失败（缺本机HTTPS凭据），本地保留。
+
+## Milestone 4 — 研究扩展（部分完成）
+- 官方CFTC年度ZIP，COMEX GOLD088691、Legacy futures-only非商业多头减空头；实际探测与落库2026-10-06净头寸210335 contracts。发布时间未知保留NULL。CLI、网页同步/连接探测和workflow_dispatch手动选择可用，默认日级任务仍仅P0。
+- 已具备WGC规范化单表CSV/XLSX导入、笔记/标签/事件日期、CSV/JSON导出、黄金默认布局恢复。新增批次来源详情：文件hash、统计截止、原始发布时间、导入时间、单位与官方URL；JSON导出包含批次信息。
+- 新增仅日度价格/汇率适用的历史最大回撤、252交易日年化波动、最近21间隔滚动波动和相邻观测收益分布。显示样本数/DEMO/假设，缺样本不报零风险；利率/月度序列拒绝套用。
+- Python与TS共享Provider advisory锁与预算统计，禁用Provider/Series/route在联网前阻止；不覆盖已有异源历史。用量仍为本地作业估算，Python内部重试/多年度CFTC下载不等于一个物理请求，不能当供应商剩余额度。
+- 凭据更换清理旧缓存；缓存键隔离凭据指纹；错误Key与额度耗尽区分。生产Standalone启动已修复、静态资源自动准备；生产禁止bypass的实际命令检查通过。
+- 最终验证：49项Web测试（配置TEST_DATABASE_URL时含2项真实PG集成）、26项Python测试、6条Playwright流程；lint/typecheck/format/build通过。真实生产实例登录会话读取729根Au99.99日线，isDemo=false，浏览器错误0；图表及风险统计截图已人工检查。SGE/CFTC网页连接测试均拿到真实样本。
+- 尚未完成：WGC原始多页报表自动识别、图表事件标记、多研究布局模板管理。因此M4标为部分完成，不宣称整份P1或严格V1 DoD全部验收。
+
+## 独立审查与决定
+已确认的解析、时间、路由、预警、比较和配额锁问题已修复并加入回归测试；Python物理请求/重试的精确计费仍作为明确限制，不能声称严格供应商剩余额度保障。未提供FRED Key，不能代替用户申请，仍需真实DFII10/DGS10验收；未获凭据/授权的AV行情endpoint、FMP、Yahoo不伪装为可用。导入CSV保留标准来源/日期列，更详细批次元信息通过详情与JSON导出查看。单owner密码会话作为V1鉴权，完整多用户/RLS后续实现。
+剩余风险：Python请求预算为作业估算；生产ExcelJS依赖2项moderate、开发ESLint链5项high；Docker配置未实际构建；GitHub尚未推送/运行CI。更详细技术限制见README、DATA_SOURCES、DEPLOYMENT。
+
+## 下一步优先顺序
+1. 本机完成GitHub授权后推送阶段历史，查看远端CI实际结果。
+2. 配置FRED_API_KEY，验证DFII10/DGS10与其他宏观序列真实数据。
+3. 按真实账户权益验证综合Provider行情和等价路由；完善物理请求计数、夜盘交易日历与离线预警job。
+4. 完成WGC原始工作簿映射、图表事件标注与多用户权限。

@@ -2591,3 +2591,19 @@ dd {
     margin-top: 8px;
   }
 }
+.risk-distribution {
+  display: grid;
+  gap: 9px;
+  margin: 20px 0;
+}
+.risk-distribution > div {
+  display: grid;
+  grid-template-columns: 130px 1fr 40px;
+  gap: 12px;
+  align-items: center;
+  font-size: 12px;
+}
+.risk-distribution meter {
+  width: 100%;
+  accent-color: var(--gold);
+}

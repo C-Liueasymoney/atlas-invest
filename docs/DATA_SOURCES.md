@@ -33,6 +33,7 @@ services/collector/.venv/bin/python -m atlas_collector sync --series FRED_DFII10
 | AKShare / SGE | [AKShare 文档](https://github.com/akfamily/akshare/blob/main/docs/data/spot/spot.md)、[实现](https://github.com/akfamily/akshare/blob/main/akshare/spot/spot_sge.py)、[SGE](https://www.sge.com.cn/sjzx/mrhq) | 无 | `spot_hist_sge('Au99.99')` 返回日线；`spot_quotations_sge` 返回分钟参考走势 |
 | FRED | [Observations V1](https://fred.stlouisfed.org/docs/api/fred/series_observations.html)、[Key](https://fred.stlouisfed.org/docs/api/api_key.html) | 服务端 `FRED_API_KEY` | 通用 series observations，支持分页；原始统计日，日/月等原始频率 |
 | Frankfurter | [官方 v2 文档](https://frankfurter.dev/) | 无 | `/v2/rates?from=...&to=...&base=usd&quotes=cny`，日度参考汇率 |
+| CFTC | [官方年度ZIP](https://www.cftc.gov/MarketReports/CommitmentsofTraders/HistoricalCompressed/index.htm)、[Legacy字段](https://www.cftc.gov/MarketReports/CommitmentsofTraders/HistoricalViewable/cotvariableslegacy.html) | 无 | `deacot{year}.zip`：Legacy futures-only；COMEX Gold088691；非商业多头减空头，单位contracts |
 | Gold API | [官方说明](https://gold-api.com/llms.txt) | 最新报价无 | `/price/XAU`，USD/troy_oz；最少缓存30秒，遵循更长的 Cache-Control |
 
 上金所日线以 `Asia/Shanghai` 零点作为日期桶标识，不代表当日开盘成交事件；`observed_at` 留空。上游没有成交量，因此 `volume=NULL`。报价从有效分钟行选择最新事件，日期取自源端更新时间；只有有明确信息的午夜跨日场景才调整前一自然日，并标质量旗标。源端日期在未来时拒绝写入。不要用采集时间填充上游时间。
@@ -57,10 +58,20 @@ Gold API 缓存由数据库跨进程共享，短于30秒的头不会缩短缓存
 - SGE 最新报价：源端 `更新时间=2026年10月19日 22:32:57`，当时实际为16日晚。疑似夜盘使用下个交易日标签；在官方交易日历/节假日映射尚未验证前返回 `invalid_timestamp`，保留旧报价。此路径不能声称已通过最新报价写入验收。
 - FRED：环境无 Key，真实认证及数据拉取未验证；返回 `not_configured`。标准化、缺失值、分页用官方结构样本测试。
 
-Alpha Vantage/FMP/Yahoo、CFTC、WGC导入不在此采集器核心交付中；不能将 Provider 配置模板误写为已经通过采集验证。上游授权和再分发条款需按用途核查，AKShare 不提供交易所商业授权保证。
+Alpha Vantage/FMP/Yahoo、WGC文件导入不在此Python采集器中；WGC上传另见 IMPORTS.md。CFTC适配器已实现并实测，不能将 Provider 配置模板误写为已经通过采集验证。上游授权和再分发条款需按用途核查，AKShare 不提供交易所商业授权保证。
 
 ## PostgreSQL 集成测试与调度
 
-本地真实 PostgreSQL 验证：19项测试全部通过，无跳过；日线重复采集插入0/更新0，Gold API 紧接重复采集返回 cached。设置仅供测试使用的 `TEST_DATABASE_URL` 后执行 pytest。集成测试会创建独立临时 schema，验证幂等、修订、整批回滚、旧报价保护、失败保留和缓存；结束删除该 schema，不会修改 public 表。未配置时这些测试明确 skip。
+本地真实 PostgreSQL 验证：26项测试全部通过，无跳过；日线重复采集插入0/更新0，Gold API 紧接重复采集返回 cached。设置仅供测试使用的 `TEST_DATABASE_URL` 后执行 pytest。集成测试会创建独立临时 schema，验证幂等、修订、整批回滚、旧报价保护、失败保留和缓存；结束删除该 schema，不会修改 public 表。未配置时这些测试明确 skip。
 
 `.github/workflows/collect.yml` 每工作日 UTC 21:20 执行，也支持手动选择 series。先设置仓库 `DATABASE_URL` secret 并完成迁移/catalog seed；FRED 可选设置 `FRED_API_KEY` secret。单指标失败会继续收集其他指标，最终任务报失败。无 FRED Key 时明确跳过相关指标。
+
+## CFTC 与采集器控制补充
+
+`python -m atlas_collector sync --series CFTC_GOLD_NET_SPEC_W --start 2026-10-01 --end 2026-10-16 --probe` 已实测成功，返回报告观察日 `2026-10-06`、净非商业头寸 `210335 contracts`。年度文件路径来自CFTC官方的Futures Only Reports，字段采用Legacy口径，不混接Disaggregated或期权合并报告。合约代码必须是 `088691` 且名称对应COMEX Gold；不将报告日期当作发布日期，`published_at=NULL` 并标记 `release_date_unknown`。CSV双日期字段需一致，持仓为非负整数，净值允许负数。ZIP仅在内存读取，限制条目/解压大小，拒绝路径穿越。
+
+生产采集在请求前检查数据库 `providers.enabled`、`series.is_enabled`、已配置路由的优先级、启用状态及品种约束。路由改为另一供应商时，Python作业明确暂停并让服务端路由控制器接管，不自行切回默认源。历史已有其他provider的数据时拒绝覆盖，应另建序列或走显式迁移。
+
+Python与TypeScript共享 `hashtext('provider:'+providerId)` advisory锁和 `provider_request_usage`；Python的会话锁覆盖预算检查、网络与存储，预算预留避免并行超支。默认5次/分钟、100次/小时，每日AKShare100、Gold API2000、FRED/Frankfurter1000；数据库配置优先。缓存命中不消耗请求预算，未发起的停用/超额请求只记ingest失败。此预算仍是本地作业估算，HTTP重试及CFTC多年度请求不等于一个物理请求；并非供应商余额查询。
+
+当前GitHub Actions默认名单仍仅P0来源；CFTC可通过CLI调用，或workflow_dispatch的series填写CFTC_GOLD_NET_SPEC_W手动运行。Python采集任务不会直接计算站内告警；需服务端访问/同步/显式告警评估触发，不能声称离线定时采集提供全天候告警。

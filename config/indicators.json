@@ -265,7 +265,7 @@
     "timezone": "UTC",
     "staleSeconds": 1209600,
     "sourceUrl": "https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm",
-    "description": "参考数据，仅用于个人研究；数据时间与采集时间分开显示。",
+    "description": "CFTC Legacy futures-only 非商业多头减空头，COMEX GOLD 088691，单位contracts；按报告观察日记录，可靠发布时间未知时为空。",
     "category": "gold",
     "enabled": true
   }

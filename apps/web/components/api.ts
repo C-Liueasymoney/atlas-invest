@@ -22,6 +22,7 @@ export type Quote = {
   unit: string;
   currency: string;
   source: { id: string; label: string; url: string };
+  asOfKind?: "date" | "timestamp";
   asOf: string | null;
   fetchedAt: string | null;
   status: string;

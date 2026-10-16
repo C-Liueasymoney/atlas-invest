@@ -202,7 +202,11 @@ export function LatestQuoteDetails({ seriesId }: { seriesId: string }) {
             </div>
             <div>
               <dt>数据截至</dt>
-              <dd>{dateTime(quote.asOf)}</dd>
+              <dd>
+                {quote.asOfKind === "date"
+                  ? quote.asOf?.slice(0, 10) || "—"
+                  : dateTime(quote.asOf)}
+              </dd>
             </div>
             <div>
               <dt>采集时间</dt>

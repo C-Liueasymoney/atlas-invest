@@ -81,3 +81,35 @@ def test_gold_cache_honors_longer_upstream_cache_control(db):
     def must_not_fetch():
         raise AssertionError('cached request reached upstream')
     assert db.run(series,'sync',must_not_fetch,cache_seconds=lambda:65)['status'] == 'cached'
+
+
+def test_disabled_provider_never_fetches(db):
+    db.connection.execute("UPDATE providers SET enabled=false WHERE id='fred'")
+    with pytest.raises(CollectorError) as error:
+        db.run({'id':'TEST','providerId':'fred','kind':'observation'},'sync',lambda:pytest.fail('disabled provider reached upstream'))
+    assert error.value.code == 'provider_disabled'
+
+
+def test_provider_budget_prevents_second_series_fetch(db):
+    db.connection.execute("UPDATE providers SET config='{\"perMinute\":1,\"perHour\":100,\"perDay\":100}' WHERE id='fred'")
+    db.run({'id':'TEST','providerId':'fred','kind':'observation'},'sync',lambda:[Observation(date(2026,10,15),Decimal('1'))])
+    with pytest.raises(CollectorError) as error:
+        db.run({'id':'TEST','providerId':'fred','kind':'observation'},'sync',lambda:pytest.fail('quota exhausted provider reached upstream'))
+    assert error.value.code == 'rate_limited'
+
+
+def test_disabled_or_incompatible_route_is_not_bypassed(db):
+    db.connection.execute("INSERT INTO series_provider_routes(canonical_series_id,provider_id,provider_symbol,operation,interval,enabled,constraints_json) VALUES('TEST','fred','TEST','observations','1d',false,'{}')")
+    with pytest.raises(CollectorError) as error:
+        db.run({'id':'TEST','providerId':'fred','providerSymbol':'TEST','kind':'observation','frequency':'1d'},'sync',lambda:pytest.fail('disabled route reached upstream'))
+    assert error.value.code == 'route_unavailable'
+
+
+def test_persist_refuses_source_switch_instead_of_rewriting_provenance(db):
+    series={'id':'TEST','providerId':'fred','kind':'observation'}
+    db.persist(series,[Observation(date(2026,10,15),Decimal('1'))])
+    db.connection.execute("INSERT INTO providers(id,name) VALUES('other','Other')")
+    with pytest.raises(CollectorError) as error:
+        db.persist({**series,'providerId':'other'},[Observation(date(2026,10,15),Decimal('2'))])
+    assert error.value.code=='source_change_forbidden'
+    assert db.connection.execute("SELECT value,provider_id FROM metric_observations").fetchone()==(Decimal('1'),'fred')

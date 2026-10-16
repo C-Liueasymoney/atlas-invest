@@ -4,6 +4,8 @@ from decimal import Decimal
 import json
 import re
 import time
+import ssl
+import certifi
 from urllib.request import Request, urlopen
 from urllib.parse import urlencode
 from urllib.error import HTTPError, URLError
@@ -17,11 +19,20 @@ class JsonClient:
         self.fetched_at = None
 
     def get(self, url, params=None):
+        return self._request(url,params)
+
+    def get_bytes(self, url):
+        return self._request(url,binary=True)
+
+    def _request(self, url, params=None, binary=False):
         request = Request(url + ('?' + urlencode(params) if params else ''), headers={'Accept': 'application/json', 'User-Agent': 'AtlasInvest/0.1 personal research'})
         for attempt in range(3):
             try:
-                with self.opener(request, timeout=25) as response:
-                    payload = json.loads(response.read(20_000_001), parse_float=Decimal)
+                with self.opener(request, timeout=25, context=ssl.create_default_context(cafile=certifi.where())) as response:
+                    raw = response.read(20_000_001)
+                    if len(raw)>20_000_000:
+                        raise CollectorError('invalid_response','Provider response exceeds 20MB.')
+                    payload = raw if binary else json.loads(raw, parse_float=Decimal)
                     match = re.search(r'max-age=(\d+)', response.headers.get('Cache-Control', ''))
                     self.cache_seconds = min(86400, int(match[1])) if match else 0
                     self.fetched_at = datetime.now(timezone.utc)

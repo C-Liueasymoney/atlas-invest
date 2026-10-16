@@ -86,3 +86,28 @@ it("propagates the oldest domestic close into premium staleness and asOf", () =>
   expect(Date.parse(r.asOf!)).toBe(Date.UTC(2026, 8, 1));
   expect(r.qualityFlags).toContain("observation_time_mismatch");
 });
+import { vi, afterEach } from "vitest";
+import { upstreamJson } from "@/lib/providers/upstream";
+afterEach(() => vi.unstubAllGlobals());
+it("classifies invalid-key JSON as authentication failure even with HTTP400", async () => {
+  vi.stubGlobal("fetch", async () =>
+    Response.json(
+      {
+        error_code: 400,
+        error_message: "The value for variable api_key is not registered",
+      },
+      { status: 400 },
+    ),
+  );
+  await expect(
+    upstreamJson(new URL("https://api.example.test/observations")),
+  ).rejects.toMatchObject({ code: "SOURCE_UNAUTHORIZED" });
+});
+it("classifies an invalid Alpha Vantage key separately from quota exhaustion", async () => {
+  vi.stubGlobal("fetch", async () =>
+    Response.json({ Information: "Invalid API key" }),
+  );
+  await expect(
+    upstreamJson(new URL("https://api.example.test/query")),
+  ).rejects.toMatchObject({ code: "SOURCE_UNAUTHORIZED" });
+});

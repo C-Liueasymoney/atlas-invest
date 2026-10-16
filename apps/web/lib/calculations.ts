@@ -67,10 +67,37 @@ export function riskStats(values: string[]) {
       ? returns.reduce((a, b) => a + (b - mean) ** 2, 0) / (returns.length - 1)
       : 0;
   return {
-    maxDrawdownPct: Number(dd.mul(100)),
+    maxDrawdownPct: p.length ? Number(dd.mul(100)) : null,
     annualizedVolatilityPct:
       returns.length > 1 ? Math.sqrt(variance * 252) * 100 : null,
     sampleCount: p.length,
+    annualizationDays: 252,
+    rollingVolatility21Pct: (() => {
+      const recent = returns.slice(-21);
+      if (recent.length < 2) return null;
+      const mean = recent.reduce((a, b) => a + b, 0) / recent.length;
+      return (
+        Math.sqrt(
+          (recent.reduce((sum, v) => sum + (v - mean) ** 2, 0) /
+            (recent.length - 1)) *
+            252,
+        ) * 100
+      );
+    })(),
+    returnDistribution: [
+      { min: -Infinity, max: -5, label: "低于 -5%" },
+      { min: -5, max: -2, label: "-5% 至 -2%" },
+      { min: -2, max: 0, label: "-2% 至 0%" },
+      { min: 0, max: 2, label: "0% 至 2%" },
+      { min: 2, max: 5, label: "2% 至 5%" },
+      { min: 5, max: Infinity, label: "5% 及以上" },
+    ].map((bin) => ({
+      label: bin.label,
+      count: returns.filter((r) => {
+        const pct = Math.expm1(r) * 100;
+        return pct >= bin.min && pct < bin.max;
+      }).length,
+    })),
   };
 }
 
