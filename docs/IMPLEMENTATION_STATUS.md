@@ -19,3 +19,18 @@
 - npm runtime audit 无高危；开发期 Next ESLint 的 braces 依赖链有 5 项高危报告，上游无兼容修复，不使用 force 降级框架，列为已知限制。
 - 初始迁移纯新增。回滚：停止应用，备份数据库后再删除专用 schema/database；不要依赖 git revert 删除业务数据。
 - 首个阶段提交和推送结果见后续阶段日志及 git history。
+
+## GitHub 推送阻塞
+M0 `5b1bdf4` — `chore(scaffold): initialize Atlas monorepo, normalized schema and CI`。
+分支 `codex/atlas-v1`，origin `https://github.com/C-Liueasymoney/atlas-invest.git`。
+`git push -u origin codex/atlas-v1` 失败：macOS credential helper `failed to get: -60008` / `could not read Username ... Device not configured`。
+没有创建远程仓库、没有强推。本地阶段提交保留。需在本机登录 GitHub（Git credential manager / GitHub CLI）后重新执行同一 push 命令。
+M0 Python pytest 在提交时未安装，之后已由独立 venv 完成，M1 全套 PostgreSQL 测试19项通过；M0 不宣称当时 Python 测试已通过。
+
+## Milestone 1 — 数据闭环
+- Provider Registry、环境变量/加密凭据、真实样本探测、符号搜索、逐项能力记录、规范路由、预算/TTL/请求去重/熔断、安全配置导入导出、owner鉴权与审计API。
+- 标准行情/历史/比较API，Decimal人民币金价折算，统计日/抓取日、来源和陈旧状态分开。Demo独立fixture/偏好库，无隐式假价回退。
+- Python AKShare SGE日线/报价、FRED通用序列、Frankfurter v2、Gold API；事务upsert、历史修订、重试/锁/采集日志。0001迁移，无破坏性变更。
+- 临时真实PostgreSQL: 三年 Au99.99 729 根日K；2026-10-16收盘901.57 CNY/g。重复同步0新增0修订。Frankfurter16个观测、Gold API最新报价成功写入，重复报价命中缓存。数值仅为当次采集证据，不是固定seed。
+- 19项Python测试（含真实PostgreSQL）通过；Web16项测试、lint、strict typecheck、production build通过。外部FRED缺Key，未宣称两条真实FRED请求验收通过。
+- 已知限制：SGE最新报价返回未来交易日时间标签而拒绝；AV只验证search，其他综合行情endpoint未完成；路由当前严格限于已注册/核实映射，历史来源切换显示分段而不拼接。无兼容备源时保留旧值。

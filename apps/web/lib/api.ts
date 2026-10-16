@@ -1,0 +1,34 @@
+import {authorize,assertRuntime,signSession,passwordMatches,isLocalDemo} from './auth/session';
+import {body,parse,json,dateString} from './api-helpers';
+import {z} from 'zod';
+import {AppError,errorResponse} from './errors';
+import {catalog,seriesById} from './catalog';
+import {quote,seriesData,compare,stats} from './data';
+import {publicProviders} from './providers/repository';
+import {providerApi} from './api-providers';
+import {workspaceApi} from './api-workspace';
+const loginAttempts:number[]=[];
+export async function dispatch(request:Request,_path?:string[]):Promise<Response>{void _path;try{
+ const url=new URL(request.url);const p=url.pathname.replace(/^\/api\//,'').split('/').filter(Boolean);const method=request.method;
+ if(p[0]==='auth'&&p[1]==='login'&&method==='POST'){
+  assertRuntime();const origin=request.headers.get('origin');if(origin&&origin!==new URL(process.env.APP_BASE_URL||url.origin).origin)throw new AppError('FORBIDDEN','拒绝跨站登录',403);
+  while(loginAttempts[0]<Date.now()-900000)loginAttempts.shift();if(loginAttempts.length>=10)throw new AppError('SOURCE_RATE_LIMITED','登录失败过多，请15分钟后重试',429);
+  const d=parse(z.object({password:z.string().max(512)}),await body(request));if(!passwordMatches(d.password,process.env.OWNER_PASSWORD||'')){loginAttempts.push(Date.now());throw new AppError('UNAUTHORIZED','密码错误',401);}
+  const r=json({authenticated:true});r.headers.set('Set-Cookie',`atlas_session=${signSession(process.env.SESSION_SECRET!)}; HttpOnly; SameSite=Strict; Path=/; Max-Age=86400${process.env.NODE_ENV==='production'?'; Secure':''}`);return r;
+ }
+ if(p[0]==='auth'&&p[1]==='logout'&&method==='POST'){authorize(request);const r=json({authenticated:false});r.headers.set('Set-Cookie','atlas_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0');return r;}
+ if(p[0]==='v1')p.shift();
+ if(p[0]==='session') {assertRuntime();let authenticated=false;try{authorize(request);authenticated=true;}catch{}return json({mode:process.env.DATA_MODE==='live'?'live':'demo',authenticated,timezone:process.env.APP_TIMEZONE||'Asia/Shanghai',localDemo:isLocalDemo()});}
+ authorize(request);
+ const managed=await providerApi(request,p,url);if(managed)return managed;
+ const work=await workspaceApi(request,p);if(work)return work;
+ if(method==='GET'){
+  if(p[0]==='catalog'){const q=(url.searchParams.get('q')??'').toLowerCase().slice(0,100),category=url.searchParams.get('category');return json({items:catalog.filter(s=>(!category||s.category===category)&&[s.id,s.nameZh,s.providerSymbol,s.description].join(' ').toLowerCase().includes(q))});}
+  if(p[0]==='quotes'){const ids=(url.searchParams.get('seriesIds')||'SGE_AU9999_D1,XAUUSD_QUOTE,FX_USDCNY_D1,FRED_DFII10,FRED_DGS10,FRED_DTWEXBGS').split(',');if(ids.length>20)throw new AppError('VALIDATION_ERROR','一次最多20项指标');return json({items:await Promise.all(ids.map(quote))});}
+  if(p[0]==='providers'&&p[1]==='health')return json({items:await publicProviders()});
+  const from=url.searchParams.has('from')?parse(dateString,url.searchParams.get('from')):undefined,to=url.searchParams.has('to')?parse(dateString,url.searchParams.get('to')):undefined;if(from&&to&&from>to)throw new AppError('VALIDATION_ERROR','开始日期不能晚于结束日期');
+  if(p[0]==='series'&&p[1]){const s=seriesById(p[1]);if(p[2]==='metadata')return json(s);if(p[2]==='stats')return json(await stats(s.id));if(['bars','observations'].includes(p[2])){if(p[2]==='bars'&&(s.kind!=='ohlc'||(url.searchParams.get('interval')??'1d')!=='1d'))throw new AppError('UNSUPPORTED_INTERVAL','该指标没有所请求频率的 OHLC');return json(await seriesData(s.id,from,to));}}
+  if(p[0]==='compare'){const ids=(url.searchParams.get('seriesIds')||'SGE_AU9999_D1,FRED_DFII10').split(',');if(ids.length>10)throw new AppError('VALIDATION_ERROR','最多10个比较指标');return json(await compare(ids,parse(z.enum(['index100','pct','raw']),url.searchParams.get('mode')??'index100'),parse(z.enum(['intersection','outer']),url.searchParams.get('align')??'outer'),from,to));}
+ }
+ throw new AppError('NOT_FOUND','接口不存在或操作尚未实现',404);
+ }catch(e){return errorResponse(e);}}
