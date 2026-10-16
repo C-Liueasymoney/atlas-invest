@@ -34,3 +34,12 @@ M0 Python pytest 在提交时未安装，之后已由独立 venv 完成，M1 全
 - 临时真实PostgreSQL: 三年 Au99.99 729 根日K；2026-10-16收盘901.57 CNY/g。重复同步0新增0修订。Frankfurter16个观测、Gold API最新报价成功写入，重复报价命中缓存。数值仅为当次采集证据，不是固定seed。
 - 19项Python测试（含真实PostgreSQL）通过；Web16项测试、lint、strict typecheck、production build通过。外部FRED缺Key，未宣称两条真实FRED请求验收通过。
 - 已知限制：SGE最新报价返回未来交易日时间标签而拒绝；AV只验证search，其他综合行情endpoint未完成；路由当前严格限于已注册/核实映射，历史来源切换显示分段而不拼接。无兼容备源时保留旧值。
+
+M1 commit `4242b13` — `feat(data): add secure provider control and normalized gold data pipelines`；GitHub重试失败（HTTPS无凭据，terminal prompts disabled），本地保留。
+
+## Milestone 2 — 可定制看板
+- 中文深浅主题、移动侧栏、全局搜索、黄金概览、指标详情/收藏/排序、标准化与百分比比较。
+- 五类Zod校验Widget注册表、真实拖拽/调整大小、增删/保存/恢复布局；Lightweight Charts v5 日K/折线、时间范围、来源/更新时间/DEMO标识。
+- API配置中心凭据确认/测试连接/预算/启停/符号路由/配置导入导出均接内部API。已修复localhost与127.0.0.1开发访问的同源判断。
+- 验证：lint/typecheck/build通过；UI注册表3项测试通过；浏览器看板保存刷新、配置诊断导出、手机导航/无横向溢出通过。桌面/移动截图人工检查。
+- 预警写接口、研究导入在M3继续；M2对应E2E以看板/配置/手机三条为范围。无新迁移。

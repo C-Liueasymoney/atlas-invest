@@ -13,7 +13,7 @@ export function validateRoutes(id:string,routes:Route[]){const s=seriesById(id);
 export async function providerApi(request:Request,p:string[],url:URL):Promise<Response|undefined>{
  const method=request.method;
  if(p[0]==='providers'){
-  if(p[1]==='catalog'||p[1]==='configured')return json({items:await publicProviders()});
+  if(p[1]==='catalog'||p[1]==='configured'||p[1]==='health')return json({items:await publicProviders()});
   if(p[1]==='export')return json({version:1,providers:await Promise.all(providers.map(async p=>({id:p.id,...await providerConfig(p.id)}))),routes:await Promise.all(catalog.map(async s=>({seriesId:s.id,routes:await getRoutes(s.id)})))});
   if(p[1]==='import'&&method==='POST'){
    const data=parse(z.object({providers:z.array(z.object({id:z.string(),enabled:z.boolean(),config:configSchema})).max(30),routes:z.array(z.object({seriesId:z.string(),routes:z.array(routeSchema).max(10)})).max(100)}),await body(request));

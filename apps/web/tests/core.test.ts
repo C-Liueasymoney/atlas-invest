@@ -25,6 +25,7 @@ describe('owner authentication',()=>{
  it('does not bypass auth for live data or cross-origin writes',()=>{
   const env={NODE_ENV:'development',DATA_MODE:'demo',LOCAL_DEV_NO_AUTH:'true',APP_BASE_URL:'http://localhost:3000'};
   expect(()=>authorize(new Request('http://localhost:3000/api/providers'),env)).not.toThrow();
+  expect(()=>authorize(new Request('http://localhost:3000/api/providers',{method:'POST',headers:{origin:'http://127.0.0.1:3000'}}),env)).not.toThrow();
   expect(()=>authorize(new Request('http://localhost:3000/api/providers'),{...env,DATA_MODE:'live'})).toThrow();
   expect(()=>authorize(new Request('http://localhost:3000/api/providers',{method:'POST',headers:{origin:'https://evil.test'}}),env)).toThrow();
  });

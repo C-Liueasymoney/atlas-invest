@@ -9,13 +9,17 @@ export function assertRuntime(env:Env=process.env) {
 export function signSession(secret:string,now=Date.now()) {const data=Buffer.from(JSON.stringify({owner:OWNER_ID,expires:now+86400000})).toString('base64url');return data+'.'+createHmac('sha256',secret).update(data).digest('base64url');}
 export function verifySession(token:string,secret:string,now=Date.now()) {try {const [data,sig]=token.split('.');const actual=Buffer.from(sig??'','base64url');const expected=createHmac('sha256',secret).update(data).digest();if(actual.length!==expected.length||!timingSafeEqual(actual,expected)) return false;const p=JSON.parse(Buffer.from(data,'base64url').toString());return p.owner===OWNER_ID&&p.expires>now;}catch{return false;}}
 export function isLocalDemo(env:Env=process.env) {return env.NODE_ENV!=='production'&&env.DATA_MODE!=='live'&&env.LOCAL_DEV_NO_AUTH!=='false';}
+export function assertSameOrigin(request:Request,env:Env=process.env) {
+ const url=new URL(request.url);const origin=request.headers.get('origin');const expected=new URL(env.APP_BASE_URL||url.origin);
+ let localAlias=false;try{const actual=new URL(origin||'');localAlias=env.NODE_ENV!=='production'&&['localhost','127.0.0.1','[::1]'].includes(actual.hostname)&&['localhost','127.0.0.1','[::1]'].includes(expected.hostname)&&actual.port===expected.port&&actual.protocol===expected.protocol;}catch{}
+ if(origin&&origin!==expected.origin&&!localAlias)throw new AppError('FORBIDDEN','拒绝跨站写入',403);
+ if(request.headers.get('sec-fetch-site')==='cross-site')throw new AppError('FORBIDDEN','拒绝跨站请求',403);
+}
 export function authorize(request:Request,env:Env=process.env) {
  assertRuntime(env);
  const url=new URL(request.url);const local=['localhost','127.0.0.1','[::1]'].includes(url.hostname);
  if(!['GET','HEAD','OPTIONS'].includes(request.method)) {
-  const origin=request.headers.get('origin');const expected=new URL(env.APP_BASE_URL||url.origin).origin;
-  if(origin&&origin!==expected) throw new AppError('FORBIDDEN','拒绝跨站写入',403);
-  if(request.headers.get('sec-fetch-site')==='cross-site') throw new AppError('FORBIDDEN','拒绝跨站请求',403);
+  assertSameOrigin(request,env);
  }
  if(isLocalDemo(env)&&local) return OWNER_ID;
  const cookie=request.headers.get('cookie')?.match(/(?:^|;\s*)atlas_session=([^;]+)/)?.[1];

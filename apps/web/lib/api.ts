@@ -1,4 +1,4 @@
-import {authorize,assertRuntime,signSession,passwordMatches,isLocalDemo} from './auth/session';
+import {authorize,assertRuntime,signSession,passwordMatches,isLocalDemo,assertSameOrigin} from './auth/session';
 import {body,parse,json,dateString} from './api-helpers';
 import {z} from 'zod';
 import {AppError,errorResponse} from './errors';
@@ -11,7 +11,7 @@ const loginAttempts:number[]=[];
 export async function dispatch(request:Request,_path?:string[]):Promise<Response>{void _path;try{
  const url=new URL(request.url);const p=url.pathname.replace(/^\/api\//,'').split('/').filter(Boolean);const method=request.method;
  if(p[0]==='auth'&&p[1]==='login'&&method==='POST'){
-  assertRuntime();const origin=request.headers.get('origin');if(origin&&origin!==new URL(process.env.APP_BASE_URL||url.origin).origin)throw new AppError('FORBIDDEN','拒绝跨站登录',403);
+  assertRuntime();assertSameOrigin(request);
   while(loginAttempts[0]<Date.now()-900000)loginAttempts.shift();if(loginAttempts.length>=10)throw new AppError('SOURCE_RATE_LIMITED','登录失败过多，请15分钟后重试',429);
   const d=parse(z.object({password:z.string().max(512)}),await body(request));if(!passwordMatches(d.password,process.env.OWNER_PASSWORD||'')){loginAttempts.push(Date.now());throw new AppError('UNAUTHORIZED','密码错误',401);}
   const r=json({authenticated:true});r.headers.set('Set-Cookie',`atlas_session=${signSession(process.env.SESSION_SECRET!)}; HttpOnly; SameSite=Strict; Path=/; Max-Age=86400${process.env.NODE_ENV==='production'?'; Secure':''}`);return r;
