@@ -4,6 +4,20 @@
 
 以各阶段实际命令输出为准；不把本地 build 视为 GitHub CI 成功。
 
+## 阶段提交与推送总表
+
+分支：`codex/atlas-v1`；origin：`https://github.com/C-Liueasymoney/atlas-invest.git`。所有push均实际尝试，因本机HTTPS凭据不可用而失败；没有远端CI通过记录。
+
+|阶段|本地SHA|Commit subject|检查证据|GitHub push|
+|---|---|---|---|---|
+|M0|`5b1bdf4`|`chore(scaffold): initialize Atlas monorepo, normalized schema and CI`|lint/typecheck/Web2/build通过；当时Python安装阻塞|失败：keychain -60008|
+|M1|`4242b13`|`feat(data): add secure provider control and normalized gold data pipelines`|Web16/Python19、真实PG/SGE/FX/Gold、build通过|失败：无HTTPS凭据|
+|M2|`cec3e78`|`feat(dashboard): add editable research widgets and provider configuration UI`|UI3、看板/配置/移动3条浏览器流程、lint/typecheck/build通过|失败：无HTTPS凭据|
+|M3|`802d295`|`feat(alerts): add persistent rules, validated imports and private deployment checks`|Web45、浏览器4、lint/typecheck/build通过|失败：无HTTPS凭据|
+|M4部分|`fb7d5a8`|`feat(research): add official COT data, import provenance and historical risk views`|Web49/Python26/浏览器6、format/lint/typecheck/build、真实生产实例通过|失败：无HTTPS凭据|
+
+本机完成GitHub授权后执行 `git push -u origin codex/atlas-v1`，会保留并推送以上分阶段历史。不要force push。
+
 ## Milestone 0 — 已提交
 初始化工程、规范化数据库、元数据 catalog、Next.js shell、Python 包、CI。
 初始环境无 Docker/PostgreSQL，先以PGlite验证迁移；M1起已启动仓库本地PostgreSQL18临时服务完成集成验证，系统服务未修改。Docker镜像未实际构建。
