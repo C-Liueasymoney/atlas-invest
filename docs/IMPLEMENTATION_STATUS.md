@@ -90,3 +90,14 @@ M3 commit `802d295` — `feat(alerts): add persistent rules, validated imports a
 2. 配置FRED_API_KEY，验证DFII10/DGS10与其他宏观序列真实数据。
 3. 按真实账户权益验证综合Provider行情和等价路由；完善物理请求计数、夜盘交易日历与离线预警job。
 4. 完成WGC原始工作簿映射、图表事件标注与多用户权限。
+
+
+## 2026-10-17 — 行情页面重做与价格纠正
+- 按 TradingView 的信息层级重排：默认白色、横向导航、Au99.99 大号价格/涨跌、清楚的来源与交易日期、大面积蓝色主图；相关指标在侧栏，缺Key留空。「研究看板」标签保留组件编辑/拖拽/保存，支持深色及390px移动端。
+- 根因是默认Demo展示合成行情，而非SGE日线解析错误。改为显式真实 `preview` 默认，实际Python probe经校验后写入私有、Git忽略的 `.atlas/market-snapshot.json`（0600）。缺数据不回退Demo；错误保留旧实际值并标陈旧。Demo主报价留空、图表保留演示标识。live仍使用PostgreSQL鉴权和规范表，没有迁移。
+- 2026-10-16 Au99.99 OHLC 893.99/902/893/901.57 CNY/g，与上金所官方日报逐字段一致；前有效收盘892.96，变化+8.61/+0.96%。10月17日三年滚动窗口728根日K。Gold API、Frankfurter真实采集成功；FRED无Key保持not_configured。详细时间、来源与换算口径见PRICE_VERIFICATION.md。
+- 首页实际刷新、Gold读取自动缓存刷新遵守Provider/路由启停、本地Controller预算及至少30秒/源Cache-Control的较长TTL；CLI跨进程目录锁覆盖Gold缓存复查与请求，防止并发绕过。CLI显式作业与Web用量统计分开，Python重试物理请求仍未精确计费。
+- Preview偏好独立存储；首次仅迁移Demo的布局/自选/笔记，预警状态与事件不迁移，避免合成前值造成伪触发。正式模式刷新使用正式sync接口；月/周指标显示实际频率。修复测试PostgreSQL helper对已有目录重复initdb的问题。
+- 验证：Web63项全部通过（含真实PG与并发刷新回归），Python27项全部通过（含真实PG）；lint、strict typecheck、format与production build通过。Demo完整8条E2E通过；真实preview价格/日期/手机两条流程单独验证。CUA人工检查白色/深色桌面、390px手机和可编辑研究标签；截图已保存本地。
+- 限制：preview依赖本地Python、仅适合本机开发，生产请配置live与外置采集job；FRED缺Key仍未完成真实验收；SGE分钟源未来时间仍拒绝，日线不冒充盘中价。GitHub凭据阻塞见本轮提交后记录，不宣称远端CI通过。
+- 回滚：本轮无数据库迁移，revert代码即可；实际快照与preview偏好为私有本地文件。旧demo-state保留，回退不会删除用户研究资料。

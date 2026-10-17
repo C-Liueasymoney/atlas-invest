@@ -46,7 +46,7 @@ def main(argv=None):
             records = fetch(series, start, end, client)
             if not records:
                 raise CollectorError('empty_response', 'No upstream records in this date range.')
-            print(json.dumps({'seriesId':series['id'], 'providerId':series['providerId'], 'sourceUrl':series['sourceUrl'], 'fetchedAt':datetime.now(timezone.utc), 'count':len(records), 'records':[asdict(record) for record in records]}, default=json_default, ensure_ascii=False))
+            print(json.dumps({'seriesId':series['id'], 'providerId':series['providerId'], 'sourceUrl':series['sourceUrl'], 'fetchedAt':datetime.now(timezone.utc), 'count':len(records), 'cacheSeconds':client.cache_seconds, 'records':[asdict(record) for record in records]}, default=json_default, ensure_ascii=False))
             return 0
         if not os.getenv('DATABASE_URL'):
             raise CollectorError('not_configured', 'Set DATABASE_URL on the server.')

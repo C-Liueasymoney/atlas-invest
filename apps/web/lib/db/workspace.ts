@@ -40,15 +40,33 @@ export function defaultWorkspace(): Workspace {
     notes: [],
   };
 }
-const file = () =>
+const demoFile = () =>
   process.env.ATLAS_DEMO_STATE_PATH ||
   resolve(process.cwd(), ".atlas/demo-state.json");
+const file = () =>
+  process.env.DATA_MODE === "preview"
+    ? process.env.ATLAS_PREVIEW_STATE_PATH ||
+      resolve(process.cwd(), ".atlas/preview-state.json")
+    : demoFile();
 let queue: Promise<unknown> = Promise.resolve();
 async function demoRead(): Promise<Workspace> {
   try {
     return JSON.parse(await readFile(file(), "utf8"));
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
+    if (process.env.DATA_MODE === "preview") {
+      try {
+        const previous: Workspace = JSON.parse(
+          await readFile(demoFile(), "utf8"),
+        );
+        // Keep user research preferences, but synthetic price history must never
+        // seed real alert comparisons or appear as real trigger history.
+        return { ...previous, alerts: [], events: [] };
+      } catch (migrationError) {
+        if ((migrationError as NodeJS.ErrnoException).code !== "ENOENT")
+          throw migrationError;
+      }
+    }
     return defaultWorkspace();
   }
 }

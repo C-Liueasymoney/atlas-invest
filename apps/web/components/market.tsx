@@ -18,7 +18,7 @@ export function QuoteCard({
   quote?: Quote;
 }) {
   const difference =
-    quote?.value != null && quote.previousValue != null
+    !quote?.isDemo && quote?.value != null && quote.previousValue != null
       ? Number(quote.value) - Number(quote.previousValue)
       : null;
   const pct =
@@ -37,7 +37,7 @@ export function QuoteCard({
       </div>
       <div className="quote-symbol">{series.providerSymbol}</div>
       <div className="quote-price">
-        {formatValue(quote?.value)}
+        {quote?.isDemo ? "—" : formatValue(quote?.value)}
         <small>{unitLabel(series.unit)}</small>
       </div>
       <div
@@ -119,7 +119,7 @@ export function IndicatorTable({ ids }: { ids: string[] }) {
                   </small>
                 </td>
                 <td>
-                  <strong>{formatValue(q.value)}</strong>
+                  <strong>{q.isDemo ? "—" : formatValue(q.value)}</strong>
                   <small>{unitLabel(q.unit)}</small>
                 </td>
                 <td>
@@ -187,7 +187,8 @@ export function LatestQuoteDetails({ seriesId }: { seriesId: string }) {
           <div>
             <span className="muted">最新参考观测</span>
             <h2>
-              {formatValue(quote.value)} <small>{unitLabel(quote.unit)}</small>
+              {quote.isDemo ? "—" : formatValue(quote.value)}{" "}
+              <small>{unitLabel(quote.unit)}</small>
             </h2>
             <Badge status={quote.isDemo ? "demo" : quote.status} />
           </div>

@@ -148,3 +148,21 @@ def test_http_preserves_decimal_precision_and_cache_control():
     payload = client.get('https://example.com')
     assert payload['price'] == Decimal('123.1234567891')
     assert client.cache_seconds == 65
+
+
+def test_probe_cli_exposes_upstream_cache_control_seconds(monkeypatch, capsys):
+    from io import BytesIO
+    from atlas_collector import __main__ as cli
+
+    class Response(BytesIO):
+        headers = {'Cache-Control': 'public, max-age=65'}
+
+    def upstream(request, **kwargs):
+        assert request.full_url == 'https://api.gold-api.com/price/XAU'
+        return Response(b'{"symbol":"XAU","currency":"USD","price":4166.1,"updatedAt":"2026-10-16T07:59:30Z"}')
+
+    monkeypatch.setattr(cli, 'JsonClient', lambda: JsonClient(opener=upstream))
+    assert cli.main(['sync', '--series', 'XAUUSD_QUOTE', '--probe']) == 0
+    output = json.loads(capsys.readouterr().out)
+    assert output['cacheSeconds'] == 65
+    assert output['records'][0]['value'] == '4166.1'

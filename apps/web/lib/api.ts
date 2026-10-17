@@ -1,3 +1,4 @@
+import { previewMode, refreshPreview } from "./market-preview";
 import {
   authorize,
   assertRuntime,
@@ -73,13 +74,20 @@ export async function dispatch(
         authenticated = true;
       } catch {}
       return json({
-        mode: process.env.DATA_MODE === "live" ? "live" : "demo",
+        mode:
+          process.env.DATA_MODE === "live"
+            ? "live"
+            : previewMode()
+              ? "preview"
+              : "demo",
         authenticated,
         timezone: process.env.APP_TIMEZONE || "Asia/Shanghai",
         localDemo: isLocalDemo(),
       });
     }
     authorize(request);
+    if (p[0] === "market" && p[1] === "refresh" && method === "POST")
+      return json(await refreshPreview());
     const managed = await providerApi(request, p, url);
     if (managed) return managed;
     const alerts = await alertsApi(request, p);

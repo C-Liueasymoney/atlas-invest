@@ -14,3 +14,6 @@
 配置导出只包含 Provider 的启停、预算和路由；不含明文、密文或后四位。导入不配置凭据。路由必须与已验证 Catalog 中的品种/市场/货币/单位/频率/spot或future定义一致；未验证映射被拒绝。
 
 所有实时读取都经内部 API。缓存/配额/请求去重由 Provider Controller 处理，live 使用 PostgreSQL advisory lock 跨 worker 串行保留预算；Demo 为进程内体验。Python独立采集器有独立幂等锁和缓存，当前用量统计是任务次数估算，重试物理次数未完整计费，因此免费严格日限额的 AV 行情不接入 Python。
+
+## 本地真实预览
+默认 `DATA_MODE=preview`，真实行情通过 `npm run data:refresh` / 首页「刷新数据」写入私有缓存，不要求PostgreSQL。FRED仅读取服务端环境变量Key，缺Key留空；网页加密保存凭据需live。Web刷新按Provider启停/Controller预算控制；CLI是显式本地采集任务，不共享Web进程内用量。Gold读取时遵守至少30秒及源Cache-Control中更长的缓存自动刷新。正式持久化、跨worker预算与加密凭据请使用live。

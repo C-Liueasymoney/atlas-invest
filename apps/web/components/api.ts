@@ -19,6 +19,9 @@ export type Quote = {
   seriesId: string;
   value: string | null;
   previousValue: string | null;
+  changeAbsolute?: string | null;
+  changePercent?: string | null;
+  changeBasis?: string;
   unit: string;
   currency: string;
   source: { id: string; label: string; url: string };

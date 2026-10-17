@@ -75,3 +75,6 @@ Alpha Vantage/FMP/Yahoo、WGC文件导入不在此Python采集器中；WGC上传
 Python与TypeScript共享 `hashtext('provider:'+providerId)` advisory锁和 `provider_request_usage`；Python的会话锁覆盖预算检查、网络与存储，预算预留避免并行超支。默认5次/分钟、100次/小时，每日AKShare100、Gold API2000、FRED/Frankfurter1000；数据库配置优先。缓存命中不消耗请求预算，未发起的停用/超额请求只记ingest失败。此预算仍是本地作业估算，HTTP重试及CFTC多年度请求不等于一个物理请求；并非供应商余额查询。
 
 当前GitHub Actions默认名单仍仅P0来源；CFTC可通过CLI调用，或workflow_dispatch的series填写CFTC_GOLD_NET_SPEC_W手动运行。Python采集任务不会直接计算站内告警；需服务端访问/同步/显式告警评估触发，不能声称离线定时采集提供全天候告警。
+
+## 2026-10-17：真实预览与价格复核
+默认开发模式已改为 `preview`；真实Python probe结果经Decimal/日期/OHLC校验写入私有缓存，缺数据不以Demo补齐。当前价格与单位、统计日期、源端时间及金价换算复核见 [PRICE_VERIFICATION.md](PRICE_VERIFICATION.md)。预览并不等于PostgreSQL持久化验收，也不是可成交实时行情；Au99.99交易所收盘、XAU参考报价、日度汇率与珠宝零售价须分开。

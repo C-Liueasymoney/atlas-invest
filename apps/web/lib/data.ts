@@ -1,3 +1,9 @@
+import {
+  previewMode,
+  previewSeries,
+  previewQuote,
+  refreshPreview,
+} from "./market-preview";
 import { collectorCommand } from "./collector";
 import fixture from "../fixtures/demo.json";
 import { catalog, seriesById } from "./catalog";
@@ -18,6 +24,7 @@ export async function seriesData(
   to = "2100-01-01",
 ): Promise<SeriesData> {
   const s = seriesById(id);
+  if (previewMode()) return previewSeries(id, from, to);
   let points: Point[] = [],
     asOf: string | null = null,
     fetchedAt: string | null = null,
@@ -166,6 +173,7 @@ export async function quote(id: string): Promise<Quote> {
       },
     };
   }
+  if (previewMode()) return previewQuote(id);
   if (demoMode()) {
     const data = await seriesData(id);
     const values = data.points.filter((p) => p.value !== null);
@@ -275,6 +283,7 @@ export async function compare(
   };
 }
 export async function syncSeries(id: string) {
+  if (previewMode()) return refreshPreview(id);
   if (demoMode())
     throw new AppError(
       "FORBIDDEN",

@@ -26,17 +26,12 @@ import {
   ErrorNotice,
   Loading,
   Modal,
-  PageHeading,
   useAction,
 } from "./ui";
-import {
-  IndicatorTable,
-  MetricWidget,
-  QuoteCard,
-  SourceHealth,
-} from "./market";
+import { IndicatorTable, MetricWidget, SourceHealth } from "./market";
 import { PriceChart } from "./charts";
 import { CompareChart } from "./compare";
+import { MarketHero, RelatedMarkets } from "./market-focus";
 type Dashboard = {
   id: string;
   name: string;
@@ -92,6 +87,18 @@ export function DashboardPage() {
       : null,
   );
   const dashboard = remote.data?.items[0];
+  const session = useRemote<{ mode: "preview" | "live" | "demo" }>(
+    "/api/v1/session",
+  );
+  const [focus, setFocus] = useState("SGE_AU9999_D1");
+  const [view, setView] = useState<"overview" | "research">("overview");
+  const refreshAction = useAction();
+  const [refreshMessage, setRefreshMessage] = useState("");
+  const [refreshVersion, setRefreshVersion] = useState(0);
+  const focusSeries = catalog.data?.items.find((s) => s.id === focus);
+  const focusQuote = useRemote<{ items: Quote[] }>(
+    `/api/v1/quotes?seriesIds=${focus}`,
+  );
   const [draft, setDraft] = useState<Widget[] | null>(null);
   const [editing, setEditing] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -112,7 +119,7 @@ export function DashboardPage() {
     );
     observer.observe(container.current);
     return () => observer.disconnect();
-  }, []);
+  }, [view]);
   function updateConfig(id: string, patch: Widget["config"]) {
     setDraft(
       widgets.map((w) =>
@@ -138,184 +145,280 @@ export function DashboardPage() {
   }
   return (
     <>
-      <PageHeading
-        eyebrow="YOUR MARKET, IN PERSPECTIVE"
-        title="黄金研究看板"
-        description="从价格到驱动因子，在数据中建立自己的判断。"
+      <div className="market-breadcrumb">
+        <Link href="/indicators">市场</Link>
+        <span>›</span>
+        <span>黄金与宏观</span>
+        <select
+          aria-label="选择主图指标"
+          value={focus}
+          onChange={(e) => setFocus(e.target.value)}
+        >
+          {catalog.data?.items
+            .filter((s) => s.kind === "ohlc" || s.id === "FX_USDCNY_D1")
+            .map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.nameZh}
+              </option>
+            ))}
+        </select>
+      </div>
+      <ErrorNotice
+        message={catalog.error || focusQuote.error}
+        retry={() => {
+          catalog.refresh();
+          focusQuote.refresh();
+        }}
+      />
+      <MarketHero
+        series={focusSeries}
+        quote={focusQuote.data?.items.find((q) => q.seriesId === focus)}
         actions={
           <>
-            <Link className="button subtle" href="/workspace">
-              图表工作台 <ArrowUpRight size={15} />
+            {session.data && session.data.mode !== "demo" && (
+              <button
+                disabled={refreshAction.busy || !focusSeries}
+                onClick={() =>
+                  refreshAction.run(async () => {
+                    const result = await api<{ message?: string }>(
+                      session.data?.mode === "preview"
+                        ? "/api/v1/market/refresh"
+                        : `/api/providers/${focusSeries?.providerId}/sync`,
+                      json(
+                        "POST",
+                        session.data?.mode === "preview"
+                          ? {}
+                          : { seriesId: focus },
+                      ),
+                    );
+                    focusQuote.refresh();
+                    quotes.refresh();
+                    setRefreshVersion((v) => v + 1);
+                    setRefreshMessage(
+                      result.message || "采集完成，以来源公布日期为准",
+                    );
+                    return result;
+                  }, "")
+                }
+              >
+                {refreshAction.busy ? "正在采集…" : "刷新数据"}
+              </button>
+            )}
+            <Link className="button subtle" href={`/indicators/${focus}`}>
+              指标详情 <ArrowUpRight size={14} />
             </Link>
-            <button
-              className={editing ? "selected" : ""}
-              onClick={() => setEditing(!editing)}
-            >
-              <Settings2 size={15} />
-              {editing ? "完成编辑" : "编辑布局"}
-            </button>
-            <button className="primary" onClick={() => setAdding(true)}>
-              <Plus size={16} />
-              添加组件
-            </button>
           </>
         }
       />
-      <ErrorNotice
-        message={remote.error || catalog.error || quotes.error}
-        retry={() => {
-          remote.refresh();
-          catalog.refresh();
-          quotes.refresh();
-        }}
-      />
-      <ActionFeedback action={action} />
-      <div className="market-section-label">
-        <span>
-          <i className="tiny-dot" /> 市场与宏观概览
-        </span>
-        <span>日级参考数据 / 非可交易报价</span>
-      </div>
-      <div className="quotes-grid">
-        {series.map((s) => (
-          <QuoteCard
-            key={s.id}
-            series={s}
-            quote={quotes.data?.items.find((q) => q.seriesId === s.id)}
-          />
-        ))}
-      </div>
-      <div className="section-toolbar dashboard-toolbar">
-        <div className="tabs">
-          <button className="active">
-            <LayoutGrid size={14} />
-            黄金研究 <span>{widgets.length} 个组件</span>
-          </button>
-        </div>
-        <div className="actions">
-          {draft && <span className="unsaved">有未保存修改</span>}
-          <button
-            className="text-button"
-            onClick={() => {
-              if (
-                window.confirm("恢复黄金研究默认布局？保存后将替换当前布局。")
-              )
-                setDraft(defaultWidgets);
-            }}
-          >
-            <RotateCcw size={13} />
-            恢复默认
-          </button>
-          <button disabled={action.busy} onClick={save}>
-            <Check size={14} />
-            保存布局
-          </button>
-        </div>
-      </div>
-      {editing && (
-        <p className="notice">
-          拖动组件标题调整位置，拖动右下角调整大小。移动端按单列展示，保留桌面布局。
+      <ActionFeedback action={refreshAction} />
+      {refreshMessage && (
+        <p role="status" className="refresh-result">
+          {refreshMessage}
         </p>
       )}
-      <div ref={container} className="dashboard-grid-container">
-        {remote.loading ? (
-          <Loading />
-        ) : widgets.length === 0 ? (
-          <Empty>看板还是空的。添加图表、行情卡或数据源组件开始研究。</Empty>
-        ) : (
-          <GridLayout
-            width={width}
-            cols={width < 680 ? 1 : 12}
-            rowHeight={52}
-            margin={[16, 16]}
-            containerPadding={[0, 0]}
-            isDraggable={editing && width >= 680}
-            isResizable={editing && width >= 680}
-            draggableHandle=".widget-header"
-            layout={widgets.map((w, i) => ({
-              i: w.id,
-              ...w.layout,
-              ...(width < 680
-                ? { x: 0, y: i * 7, w: 1, h: w.type === "metric-card" ? 4 : 7 }
-                : { minW: 3, minH: 4 }),
-            }))}
-            onLayoutChange={(layout) => {
-              if (!editing || width < 680) return;
-              const next = widgets.map((w) => {
-                const l = layout.find((l) => l.i === w.id);
-                return l
-                  ? { ...w, layout: { x: l.x, y: l.y, w: l.w, h: l.h } }
-                  : w;
-              });
-              if (JSON.stringify(next) !== JSON.stringify(widgets))
-                setDraft(next);
-            }}
-          >
-            {widgets.map((w) => (
-              <section
-                key={w.id}
-                className={`panel widget ${editing ? "widget-editing" : ""}`}
-              >
-                <header className="widget-header">
-                  <h2>
-                    {editing && <GripVertical size={15} />}{" "}
-                    {w.title ||
-                      (w.config.seriesId
-                        ? catalog.data?.items.find(
-                            (s) => s.id === w.config.seriesId,
-                          )?.nameZh
-                        : undefined) ||
-                      widgetRegistry[w.type as WidgetType]?.title ||
-                      w.type}
-                  </h2>
-                  <div>
-                    {w.config.seriesId && (
-                      <Link
-                        href={`/indicators/${w.config.seriesId}`}
-                        aria-label="查看指标详情"
-                      >
-                        <ArrowUpRight size={15} />
-                      </Link>
-                    )}
-                    {editing && (
-                      <button
-                        className="icon-button danger"
-                        aria-label={`删除组件 ${w.title || w.type}`}
-                        onClick={() =>
-                          setDraft(widgets.filter((item) => item.id !== w.id))
-                        }
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    )}
-                  </div>
-                </header>
-                <div className="widget-body">
-                  {validateWidget(w) ? (
-                    <WidgetContent
-                      widget={w}
-                      onConfig={(patch) => updateConfig(w.id, patch)}
-                    />
-                  ) : (
-                    <Empty>
-                      组件配置无法识别。请删除后从组件目录重新添加。
-                    </Empty>
-                  )}
-                </div>
-              </section>
-            ))}
-          </GridLayout>
-        )}
-      </div>
-      <div className="research-disclaimer">
-        <span>研究提示</span>
-        <p>
-          黄金受实际利率、美元、人民币汇率及供需等多因素影响。不同来源可能存在发布时间与交易日差异，请结合原始来源审慎理解。
-        </p>
-        <Link href="/settings/data-sources">
-          查看数据来源 <ArrowUpRight size={14} />
+      <div className="focus-tabs" role="tablist" aria-label="行情内容">
+        <button
+          role="tab"
+          aria-selected={view === "overview"}
+          className={view === "overview" ? "active" : ""}
+          onClick={() => setView("overview")}
+        >
+          总览
+        </button>
+        <button
+          role="tab"
+          aria-selected={view === "research"}
+          className={view === "research" ? "active" : ""}
+          onClick={() => setView("research")}
+        >
+          研究看板<span>{widgets.length}</span>
+        </button>
+        <Link href="/workspace">
+          比较分析 <ArrowUpRight size={13} />
         </Link>
       </div>
+      {view === "overview" ? (
+        <div className="focus-market-layout">
+          <section className="focus-chart-section" aria-label="主要价格图表">
+            <PriceChart
+              key={`${focus}-${refreshVersion}`}
+              seriesId={focus}
+              range="1Y"
+              chartType="line"
+            />
+          </section>
+          <RelatedMarkets
+            series={series.filter((s) => s.id !== focus)}
+            quotes={quotes.data?.items || []}
+          />
+        </div>
+      ) : (
+        <>
+          <div className="research-layout-heading">
+            <div>
+              <h2>黄金研究看板</h2>
+              <p>保留你的图表、指标与布局。</p>
+            </div>
+            <div className="actions">
+              <button
+                className={editing ? "selected" : ""}
+                onClick={() => setEditing(!editing)}
+              >
+                <Settings2 size={15} />
+                {editing ? "完成编辑" : "编辑布局"}
+              </button>
+              <button className="primary" onClick={() => setAdding(true)}>
+                <Plus size={16} />
+                添加组件
+              </button>
+            </div>
+          </div>
+          <ErrorNotice
+            message={remote.error || quotes.error}
+            retry={() => {
+              remote.refresh();
+              quotes.refresh();
+            }}
+          />
+          <ActionFeedback action={action} />
+          <div className="section-toolbar dashboard-toolbar">
+            <div className="tabs">
+              <button className="active">
+                <LayoutGrid size={14} />
+                黄金研究 <span>{widgets.length} 个组件</span>
+              </button>
+            </div>
+            <div className="actions">
+              {draft && <span className="unsaved">有未保存修改</span>}
+              <button
+                className="text-button"
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      "恢复黄金研究默认布局？保存后将替换当前布局。",
+                    )
+                  )
+                    setDraft(defaultWidgets);
+                }}
+              >
+                <RotateCcw size={13} />
+                恢复默认
+              </button>
+              <button disabled={action.busy} onClick={save}>
+                <Check size={14} />
+                保存布局
+              </button>
+            </div>
+          </div>
+          {editing && (
+            <p className="notice">
+              拖动组件标题调整位置，拖动右下角调整大小。移动端按单列展示，保留桌面布局。
+            </p>
+          )}
+          <div ref={container} className="dashboard-grid-container">
+            {remote.loading ? (
+              <Loading />
+            ) : widgets.length === 0 ? (
+              <Empty>
+                看板还是空的。添加图表、行情卡或数据源组件开始研究。
+              </Empty>
+            ) : (
+              <GridLayout
+                width={width}
+                cols={width < 680 ? 1 : 12}
+                rowHeight={52}
+                margin={[16, 16]}
+                containerPadding={[0, 0]}
+                isDraggable={editing && width >= 680}
+                isResizable={editing && width >= 680}
+                draggableHandle=".widget-header"
+                layout={widgets.map((w, i) => ({
+                  i: w.id,
+                  ...w.layout,
+                  ...(width < 680
+                    ? {
+                        x: 0,
+                        y: i * 7,
+                        w: 1,
+                        h: w.type === "metric-card" ? 4 : 7,
+                      }
+                    : { minW: 3, minH: 4 }),
+                }))}
+                onLayoutChange={(layout) => {
+                  if (!editing || width < 680) return;
+                  const next = widgets.map((w) => {
+                    const l = layout.find((l) => l.i === w.id);
+                    return l
+                      ? { ...w, layout: { x: l.x, y: l.y, w: l.w, h: l.h } }
+                      : w;
+                  });
+                  if (JSON.stringify(next) !== JSON.stringify(widgets))
+                    setDraft(next);
+                }}
+              >
+                {widgets.map((w) => (
+                  <section
+                    key={w.id}
+                    className={`panel widget ${editing ? "widget-editing" : ""}`}
+                  >
+                    <header className="widget-header">
+                      <h2>
+                        {editing && <GripVertical size={15} />}{" "}
+                        {w.title ||
+                          (w.config.seriesId
+                            ? catalog.data?.items.find(
+                                (s) => s.id === w.config.seriesId,
+                              )?.nameZh
+                            : undefined) ||
+                          widgetRegistry[w.type as WidgetType]?.title ||
+                          w.type}
+                      </h2>
+                      <div>
+                        {w.config.seriesId && (
+                          <Link
+                            href={`/indicators/${w.config.seriesId}`}
+                            aria-label="查看指标详情"
+                          >
+                            <ArrowUpRight size={15} />
+                          </Link>
+                        )}
+                        {editing && (
+                          <button
+                            className="icon-button danger"
+                            aria-label={`删除组件 ${w.title || w.type}`}
+                            onClick={() =>
+                              setDraft(
+                                widgets.filter((item) => item.id !== w.id),
+                              )
+                            }
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </header>
+                    <div className="widget-body">
+                      {validateWidget(w) ? (
+                        <WidgetContent
+                          widget={w}
+                          onConfig={(patch) => updateConfig(w.id, patch)}
+                        />
+                      ) : (
+                        <Empty>
+                          组件配置无法识别。请删除后从组件目录重新添加。
+                        </Empty>
+                      )}
+                    </div>
+                  </section>
+                ))}
+              </GridLayout>
+            )}
+          </div>
+        </>
+      )}
+      <p className="market-disclaimer">
+        数据仅供个人研究，不构成投资建议。价格、频率与公布日期以原始来源为准。
+      </p>
       {adding && (
         <Modal title="添加研究组件" onClose={() => setAdding(false)}>
           <div className="widget-catalog">

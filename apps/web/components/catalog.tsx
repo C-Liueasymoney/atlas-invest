@@ -2,7 +2,15 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ArrowDownToLine, ArrowUpRight, Search, Star } from "lucide-react";
-import { api, json, unitLabel, frequencyLabel, Series, useRemote } from "./api";
+import {
+  api,
+  json,
+  unitLabel,
+  frequencyLabel,
+  Quote,
+  Series,
+  useRemote,
+} from "./api";
 import {
   ActionFeedback,
   Empty,
@@ -13,7 +21,7 @@ import {
 } from "./ui";
 import { ImportHistory } from "./provenance";
 import { RiskPanel } from "./risk";
-import { LatestQuoteDetails } from "./market";
+import { MarketHero } from "./market-focus";
 import { PriceChart } from "./charts";
 export function CatalogPage() {
   const [query, setQuery] = useState("");
@@ -119,6 +127,9 @@ export function IndicatorDetail({ id }: { id: string }) {
   const remote = useRemote<Series>(
     `/api/v1/series/${encodeURIComponent(id)}/metadata`,
   );
+  const latest = useRemote<{ items: Quote[] }>(
+    `/api/v1/quotes?seriesIds=${encodeURIComponent(id)}`,
+  );
   const action = useAction();
   const s = remote.data;
   return (
@@ -129,10 +140,14 @@ export function IndicatorDetail({ id }: { id: string }) {
       ) : (
         s && (
           <>
-            <PageHeading
-              eyebrow={`${s.category} / ${s.providerSymbol}`}
-              title={s.nameZh}
-              description={s.description}
+            <div className="market-breadcrumb">
+              <Link href="/indicators">指标目录</Link>
+              <span>›</span>
+              <span>{s.providerSymbol}</span>
+            </div>
+            <MarketHero
+              series={s}
+              quote={latest.data?.items.find((q) => q.seriesId === id)}
               actions={
                 <>
                   <button
@@ -142,7 +157,7 @@ export function IndicatorDetail({ id }: { id: string }) {
                     disabled={action.busy}
                   >
                     <Star size={15} />
-                    加入观察列表
+                    加入自选
                   </button>
                   <a
                     className="button"
@@ -155,8 +170,15 @@ export function IndicatorDetail({ id }: { id: string }) {
               }
             />
             <ActionFeedback action={action} />
-            <LatestQuoteDetails seriesId={id} />
-            <section className="panel detail-chart">
+            <ErrorNotice message={latest.error} retry={latest.refresh} />
+            <div className="focus-tabs detail-tabs">
+              <a href="#price-chart">图表</a>
+              <a href="#series-metadata">数据说明</a>
+              <Link href="/workspace">
+                比较分析 <ArrowUpRight size={13} />
+              </Link>
+            </div>
+            <section id="price-chart" className="panel detail-chart">
               <div className="panel-heading">
                 <h2>历史走势</h2>
                 <span className="muted small">
@@ -169,7 +191,7 @@ export function IndicatorDetail({ id }: { id: string }) {
             {(s.kind === "ohlc" || s.id === "FX_USDCNY_D1") && (
               <RiskPanel seriesId={s.id} />
             )}
-            <section className="panel metadata-panel">
+            <section id="series-metadata" className="panel metadata-panel">
               <h2>数据口径与研究说明</h2>
               <dl>
                 <div>

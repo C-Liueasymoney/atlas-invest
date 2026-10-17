@@ -39,6 +39,8 @@ const child = spawn(
     stdio: "inherit",
     env: {
       ...process.env,
+      DATA_MODE:
+        process.env.DATA_MODE || (command === "dev" ? "preview" : "live"),
       HOSTNAME: process.env.ATLAS_BIND_HOST || "127.0.0.1",
       ATLAS_PROJECT_ROOT: fileURLToPath(new URL("../", import.meta.url)),
       NODE_ENV: command === "dev" ? "development" : "production",

@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import EmbeddedPostgres from "embedded-postgres";
 const pg = new EmbeddedPostgres({
   databaseDir: "/tmp/atlas-invest-postgres-test",
@@ -9,7 +10,8 @@ const pg = new EmbeddedPostgres({
   onLog: () => {},
   onError: () => {},
 });
-await pg.initialise();
+if (!existsSync("/tmp/atlas-invest-postgres-test/PG_VERSION"))
+  await pg.initialise();
 await pg.start();
 try {
   await pg.createDatabase("atlas_test");

@@ -3,41 +3,34 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
-  Activity,
   ArrowUpRight,
-  Bell,
-  BookOpen,
-  ChartNoAxesCombined,
-  ChevronRight,
-  Database,
-  LayoutDashboard,
   Menu,
   Moon,
   Search,
   Settings2,
-  Star,
   Sun,
   X,
 } from "lucide-react";
 import { api, json, Series, useRemote } from "./api";
-import { Badge, ErrorNotice, Modal } from "./ui";
+import { ErrorNotice, Modal } from "./ui";
 const links = [
-  { href: "/dashboard", title: "研究看板", icon: LayoutDashboard },
-  { href: "/workspace", title: "图表工作台", icon: ChartNoAxesCombined },
-  { href: "/indicators", title: "指标目录", icon: Activity },
-  { href: "/watchlists", title: "观察列表", icon: Star },
-  { href: "/alerts", title: "预警中心", icon: Bell },
-  { href: "/research", title: "研究笔记", icon: BookOpen },
+  { href: "/dashboard", title: "市场总览" },
+  { href: "/workspace", title: "图表" },
+  { href: "/indicators", title: "指标" },
+  { href: "/watchlists", title: "自选" },
+  { href: "/alerts", title: "预警" },
+  { href: "/research", title: "研究" },
+  { href: "/settings/data-sources", title: "数据源配置" },
 ];
 export function Shell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const router = useRouter();
   const [menu, setMenu] = useState(false);
-  const [light, setLight] = useState(false);
+  const [light, setLight] = useState(true);
   const [search, setSearch] = useState(false);
   const [query, setQuery] = useState("");
   const session = useRemote<{
-    mode: "demo" | "live";
+    mode: "demo" | "live" | "preview";
     authenticated: boolean;
     timezone: string;
   }>("/api/v1/session");
@@ -45,7 +38,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
     search ? `/api/v1/catalog?q=${encodeURIComponent(query)}` : null,
   );
   useEffect(() => {
-    const theme = localStorage.getItem("atlas-theme") || "dark";
+    const theme = localStorage.getItem("atlas-theme-v2") || "light";
     document.documentElement.dataset.theme = theme;
     document.documentElement.dataset.colors =
       localStorage.getItem("atlas-colors") || "cn";
@@ -67,128 +60,86 @@ export function Shell({ children }: { children: React.ReactNode }) {
     const next = !light;
     setLight(next);
     document.documentElement.dataset.theme = next ? "light" : "dark";
-    localStorage.setItem("atlas-theme", next ? "light" : "dark");
+    localStorage.setItem("atlas-theme-v2", next ? "light" : "dark");
   }
   return (
-    <div className="app-shell">
-      <aside className={`sidebar ${menu ? "open" : ""}`}>
-        <Link href="/dashboard" className="brand">
-          <span className="brand-symbol">
-            A<span>↗</span>
-          </span>
-          <div>
-            ATLAS<span>INVEST / RESEARCH</span>
-          </div>
+    <div className="app-shell market-shell">
+      <header className="market-header">
+        <Link
+          href="/dashboard"
+          className="atlas-wordmark"
+          aria-label="Atlas Invest 首页"
+        >
+          <span className="atlas-mark">a</span>atlas
+          <span className="brand-invest">invest</span>
         </Link>
-        <div className="sidebar-label">
-          个人研究空间 <span>01</span>
-        </div>
-        <nav>
-          {links.map(({ href, title, icon: Icon }) => (
+        <nav
+          className={`horizontal-nav ${menu ? "is-open" : ""}`}
+          aria-label="主导航"
+        >
+          {links.map((l) => (
             <Link
-              key={href}
-              href={href}
-              className={path.startsWith(href) ? "active" : ""}
+              key={l.href}
+              href={l.href}
+              className={path.startsWith(l.href) ? "active" : ""}
               onClick={() => setMenu(false)}
             >
-              <Icon size={18} />
-              {title}
-              {path.startsWith(href) && <ChevronRight size={14} />}
+              {l.title}
             </Link>
           ))}
         </nav>
-        <div className="sidebar-bottom">
-          <div className="research-note">
-            <span className="eyebrow">THINK LONG TERM</span>
-            <p>
-              让每一个判断，
-              <br />
-              都有数据可循。
-            </p>
-            <span>
-              独立思考 · 审慎决策 <ArrowUpRight size={13} />
-            </span>
-          </div>
-          <Link
-            href="/settings/data-sources"
-            className={`settings-link ${path.includes("data-sources") ? "active" : ""}`}
+        <div className="market-header-tools">
+          <button
+            className="market-search"
+            aria-label="搜索指标"
+            onClick={() => setSearch(true)}
           >
-            <Database size={18} />
-            数据源配置
-          </Link>
-          <Link href="/settings" className="settings-link">
+            <Search size={18} />
+            <span>搜索</span>
+            <kbd>⌘ K</kbd>
+          </button>
+          <Link
+            href="/settings"
+            className="icon-button preferences-link"
+            aria-label="偏好设置"
+          >
             <Settings2 size={18} />
-            偏好设置
           </Link>
-          <div className="profile">
-            <div className="avatar">LC</div>
-            <div>
-              个人工作台
-              <small>
-                {session.data?.mode === "demo"
-                  ? "本地演示空间"
-                  : "私有研究空间"}
-              </small>
-            </div>
-            <span className="tiny-dot" />
-          </div>
+          <button
+            className="icon-button"
+            onClick={toggleTheme}
+            aria-label={light ? "切换深色主题" : "切换浅色主题"}
+          >
+            {light ? <Moon size={18} /> : <Sun size={18} />}
+          </button>
+          <button
+            className="icon-button nav-menu-button"
+            aria-label={menu ? "关闭导航" : "打开导航"}
+            aria-expanded={menu}
+            onClick={() => setMenu(!menu)}
+          >
+            {menu ? <X size={20} /> : <Menu size={20} />}
+          </button>
+          {!session.data?.authenticated && session.data?.mode === "live" && (
+            <Link className="button primary" href="/login">
+              登录
+            </Link>
+          )}
         </div>
-      </aside>
-      {menu && (
-        <button
-          className="sidebar-scrim"
-          aria-label="关闭导航"
-          onClick={() => setMenu(false)}
-        />
-      )}
+      </header>
       <div className="main-area">
-        <header className="topbar">
-          <div className="breadcrumb">
-            <button
-              className="icon-button mobile-menu"
-              aria-label="打开导航"
-              onClick={() => setMenu(!menu)}
-            >
-              {menu ? <X size={18} /> : <Menu size={18} />}
-            </button>
-            <span>工作空间</span>
-            <ChevronRight size={13} />
-            <strong>
-              {path.includes("data-sources")
-                ? "数据源配置"
-                : links.find((l) => path.startsWith(l.href))?.title ||
-                  "偏好设置"}
-            </strong>
-          </div>
-          <div className="topbar-actions">
-            <button className="search-trigger" onClick={() => setSearch(true)}>
-              <Search size={15} />
-              <span>搜索指标、代码…</span>
-              <kbd>⌘ K</kbd>
-            </button>
-            {session.data && (
-              <Badge
-                status={session.data.mode === "demo" ? "demo" : "available"}
-              />
-            )}
-            <button
-              className="icon-button"
-              onClick={toggleTheme}
-              aria-label={light ? "切换深色主题" : "切换浅色主题"}
-            >
-              {light ? <Moon size={18} /> : <Sun size={18} />}
-            </button>
-            {!session.data?.authenticated && session.data?.mode === "live" && (
-              <Link href="/login">登录</Link>
-            )}
-          </div>
-        </header>
         <main className="workspace-main">
           <ErrorNotice message={session.error} retry={session.refresh} />
+          {session.data?.mode === "preview" && (
+            <div className="preview-banner">
+              <span className="market-state-dot" />
+              真实数据预览 · 最近成功采集<span>日级数据，非实时行情</span>
+            </div>
+          )}
           {session.data?.mode === "demo" && (
             <div className="demo-banner">
-              <span className="demo-tag">DEMO</span>
-              当前为独立演示数据，所有数值仅用于体验，不代表真实市场行情。
+              <span className="demo-tag">演示模式</span>
+              <span>当前为独立演示数据，不代表真实市场行情。</span>
               <Link href="/settings/data-sources">
                 接入真实数据 <ArrowUpRight size={13} />
               </Link>
@@ -197,10 +148,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
           {children}
         </main>
         <footer className="footer">
-          <span>
-            <span className="tiny-dot" /> 可追溯的数据，独立的研究
-          </span>
-          <span>Asia/Shanghai · 数据仅供研究，不构成投资建议</span>
+          <span>Atlas Invest · 个人投资研究</span>
+          <span>Asia/Shanghai · 日级参考数据，仅供研究</span>
         </footer>
       </div>
       {search && (
@@ -210,7 +159,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <input
               autoFocus
               aria-label="全局搜索指标"
-              placeholder="Au99.99、实际利率、USD/CNY…"
+              placeholder="搜索名称、代码或市场…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
@@ -230,7 +179,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
                   <small>{s.id}</small>
                 </div>
                 <span>
-                  {s.unit} <ArrowUpRight size={16} />
+                  {s.unit}
+                  <ArrowUpRight size={16} />
                 </span>
               </button>
             ))}

@@ -1,7 +1,9 @@
 # 本地与私有部署
 
-## 本地 Demo
-Node >=22。`npm ci && npm run setup:local && npm run dev`，访问 http://localhost:3000 。默认仅监听127.0.0.1。Demo 合成行情位于独立 fixture，偏好写到 `apps/web/.atlas/demo-state.json`，不会写 PostgreSQL 正式行情。
+## 本地真实预览
+Node >=22，安装Python采集器（见README）。`npm ci && npm run setup:local` 后运行 `npm run data:refresh && npm run dev`，访问 http://localhost:3000 。默认 `DATA_MODE=preview`，仅监听127.0.0.1。真实缓存位于根目录 `.atlas/market-snapshot.json`，文件权限0600、不提交Git；偏好仍写本地JSON，不写 PostgreSQL 正式行情。未采集或缺Key时留空；失败保留旧实际值并标陈旧。
+
+显式 `DATA_MODE=demo` 为合成图表体验，带DEMO标签，主报价留空。Preview只适合本机开发，依赖本地Python；生产使用live与外置采集job。
 
 ## 真实本地模式
 

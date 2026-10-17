@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import {
+  AreaSeries,
   CandlestickSeries,
   ColorType,
   createChart,
@@ -115,7 +116,7 @@ export function PriceChart({
           lines={[
             {
               name: data.series.nameZh,
-              color: "#d8b979",
+              color: "#2962ff",
               points: data.points.map((p) => ({
                 time: p.time,
                 value: p.value === null ? null : Number(p.value),
@@ -224,8 +225,14 @@ export function ChartCanvas({
           color: style.getPropertyValue("--grid").trim() || "#1d2531",
         },
       },
-      rightPriceScale: { borderColor: "#293240" },
-      timeScale: { borderColor: "#293240", timeVisible: false },
+      rightPriceScale: {
+        borderColor: style.getPropertyValue("--border").trim(),
+        borderVisible: false,
+      },
+      timeScale: {
+        borderColor: style.getPropertyValue("--border").trim(),
+        timeVisible: false,
+      },
       crosshair: {
         mode: 0,
         vertLine: { labelBackgroundColor: "#46556b" },
@@ -257,6 +264,25 @@ export function ChartCanvas({
               low: p.low!,
               close: p.close!,
             })),
+        );
+      } else if (lines.length === 1 && !step) {
+        const series = chart.addSeries(AreaSeries, {
+          lineColor: line.color,
+          topColor: "rgba(41,98,255,0.16)",
+          bottomColor: "rgba(41,98,255,0.005)",
+          lineWidth: 2,
+          priceFormat: {
+            type: "price",
+            precision: line.name.includes("汇率") ? 4 : 2,
+            minMove: line.name.includes("汇率") ? 0.0001 : 0.01,
+          },
+        });
+        series.setData(
+          line.points.map((p) =>
+            p.value !== null && Number.isFinite(p.value)
+              ? { time: p.time as Time, value: p.value }
+              : { time: p.time as Time },
+          ),
         );
       } else {
         const series = chart.addSeries(LineSeries, {
@@ -356,7 +382,7 @@ export function ChartCanvas({
   return (
     <div className="chart-canvas-wrap">
       <div className="chart-hover" aria-live="off">
-        {hover || "拖动平移 · 滚轮缩放 · 十字光标查看数据"}
+        {hover || "移动光标查看历史观测 · 滚轮缩放"}
       </div>
       <div
         ref={ref}

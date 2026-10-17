@@ -7,13 +7,15 @@ test("demo dashboard is honest, usable and persists a widget", async ({
     response.url().includes("/FRED_DFII10/observations"),
   );
   await page.goto("/dashboard");
-  expect((await macroResponse).ok()).toBeTruthy();
   await expect(
-    page.getByRole("heading", { name: "黄金研究看板" }),
+    page.getByRole("heading", { name: "国内黄金 Au99.99" }),
   ).toBeVisible();
   await expect(
     page.getByText("当前为独立演示数据", { exact: false }),
   ).toBeVisible();
+  await expect(page.getByTestId("focus-price")).toContainText("—");
+  await page.getByRole("tab", { name: /研究看板/ }).click();
+  expect((await macroResponse).ok()).toBeTruthy();
   await page.getByRole("button", { name: "添加组件" }).click();
   await page.getByRole("button", { name: "指标行情卡", exact: false }).click();
   await page.getByRole("button", { name: "添加到看板" }).click();
@@ -25,6 +27,7 @@ test("demo dashboard is honest, usable and persists a widget", async ({
   expect(
     items[0].widgets.some((w: { type: string }) => w.type === "metric-card"),
   ).toBeTruthy();
+  await page.getByRole("tab", { name: /研究看板/ }).click();
   await page.getByRole("button", { name: "编辑布局" }).click();
   await expect(
     page.getByRole("button", { name: "删除组件 metric-card" }).last(),
@@ -86,7 +89,7 @@ test("mobile layout keeps navigation and dashboard usable", async ({
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/dashboard");
   await expect(
-    page.getByRole("heading", { name: "黄金研究看板" }),
+    page.getByRole("heading", { name: "国内黄金 Au99.99" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "打开导航" }).click();
   await page.getByRole("link", { name: "数据源配置", exact: true }).click();

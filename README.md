@@ -2,17 +2,24 @@
 
 个人黄金与宏观研究工作台：Next.js / React / TypeScript、PostgreSQL、Python collector。中文深浅主题、可编辑看板、日K与折线、指标比较、自选、站内预警和数据源配置中心。所有正式数据都经过供应商适配、校验、归一化与存储；演示数据明确隔离。
 
-## 无 Key 启动体验
+## 本地真实行情预览
 
-需要 Node.js >=22（推荐22 LTS）与 npm。
+需要 Node.js >=22（推荐22 LTS）、npm 和 Python 3.12/3.13。
 
 ```sh
 npm ci
 npm run setup:local
+python3.12 -m venv services/collector/.venv
+services/collector/.venv/bin/python -m pip install -e 'services/collector[test]'
+npm run data:refresh
 npm run dev
 ```
 
-打开 [研究看板](http://localhost:3000/dashboard) 或 [API配置中心](http://localhost:3000/settings/data-sources)。默认仅监听本机，Demo不需要数据库或Key。根目录`.env`由npm脚本自动加载。Demo价格为合成fixture，界面与接口均有标签；仅布局/自选/规则/笔记写入独立`.atlas`目录，正式行情表不接收Demo。
+打开 [研究看板](http://localhost:3000/dashboard) 或 [API配置中心](http://localhost:3000/settings/data-sources)。默认 `DATA_MODE=preview`，仅监听本机，不需要数据库；读取采集器生成的实际行情缓存，首页突出 Au99.99 收盘价、相邻有效交易日变化和主图，研究组件在「研究看板」标签中。根目录 `.env` 由 npm 脚本自动加载。
+
+点击「刷新数据」或运行 `npm run data:refresh` 可重新采集。SGE、Gold API、Frankfurter无需Key；FRED缺Key留空。Gold API参考报价读取时遵守至少30秒及源Cache-Control中更长的缓存；日线按交易/统计日期显示，绝不标成盘中价。私有实际行情在根目录 `.atlas/market-snapshot.json`，已忽略、不提交；它与PostgreSQL正式存储独立。采集失败保留最近实际值并标记陈旧，首次无数据则留空，不以假价填补。预览偏好独立存入 `.atlas/preview-state.json`；首次保留既有Demo布局/笔记/自选，预警与事件重新建立；生产请配置下文的 `live` 模式。
+
+显式设 `DATA_MODE=demo` 可离线体验合成图表；行情接口带 `isDemo:true`，首页报价留空并标「演示数据」。Demo不是市场报价。
 
 ## 接入真实数据
 
@@ -53,7 +60,7 @@ services/collector/.venv/bin/python -m atlas_collector sync --series SGE_AU9999_
 
 登录后查看`/indicators/SGE_AU9999_D1`，或调用`GET /api/v1/series/SGE_AU9999_D1/bars?interval=1d`，将最后一条`time/open/high/low/close`与[上金所每日行情](https://www.sge.com.cn/sjzx/mrhq)核对。界面“数据截至”是交易/统计日期，“采集”是抓取时间；历史日线不标盘中实时。
 
-2026-10-16本轮真实验证：三年729根Au99.99日K，最新交易日10月16日，收盘901.57 CNY/g；重复同步0新增0修订。这里只记录验证证据，不会将该值固定seed为正式报价。SGE最新报价当日返回未来交易日标签，适配器正确拒绝，日线不受影响。
+2026-10-17复核：最新交易日10月16日，Au99.99收盘901.57 CNY/g、前有效收盘892.96；+8.61、+0.96%。OHLC与上金所官方日报逐字段一致。三年滚动窗口当日728根日K。该数值是当次真实采集证据，未固定seed为正式报价；SGE分钟报价返回未来交易日标签，适配器继续拒绝。详见 [价格复核记录](docs/PRICE_VERIFICATION.md)。
 
 FRED命令将同一Key复用于`FRED_DFII10`、`FRED_DGS10`和其他catalog序列；Frankfurter：`--series FX_USDCNY_D1`；Gold：`--series XAUUSD_QUOTE`；CFTC：`--series CFTC_GOLD_NET_SPEC_W`。实际参数见`--help`。
 
