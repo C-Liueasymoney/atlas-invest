@@ -101,3 +101,6 @@ M3 commit `802d295` — `feat(alerts): add persistent rules, validated imports a
 - 验证：Web63项全部通过（含真实PG与并发刷新回归），Python27项全部通过（含真实PG）；lint、strict typecheck、format与production build通过。Demo完整8条E2E通过；真实preview价格/日期/手机两条流程单独验证。CUA人工检查白色/深色桌面、390px手机和可编辑研究标签；截图已保存本地。
 - 限制：preview依赖本地Python、仅适合本机开发，生产请配置live与外置采集job；FRED缺Key仍未完成真实验收；SGE分钟源未来时间仍拒绝，日线不冒充盘中价。GitHub凭据阻塞见本轮提交后记录，不宣称远端CI通过。
 - 回滚：本轮无数据库迁移，revert代码即可；实际快照与preview偏好为私有本地文件。旧demo-state保留，回退不会删除用户研究资料。
+
+本轮实现提交 `39a639f` — `feat(market): focus gold overview and replace default synthetic quotes with verified preview`。
+分支 `codex/atlas-v1`，origin `https://github.com/C-Liueasymoney/atlas-invest.git`。本轮HTTPS已到达远端，但GitHub拒绝推送：当前Personal Access Token缺少 `workflow` scope，不能创建/更新历史中的 `.github/workflows/ci.yml`。这取代了此前无本机凭据的具体阻塞；不是代码检查失败。需使用具备该仓库代码及工作流写入权限的凭据，之后重新执行 `git push -u origin codex/atlas-v1`。没有移除CI以绕过权限、没有强推，全部本地阶段历史保留。
