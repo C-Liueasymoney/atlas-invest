@@ -185,6 +185,30 @@ it("blocks collection when the canonical route is disabled", async () => {
     memory.routes.delete(id);
   }
 });
+it("includes both equity indexes in the default preview refresh", async () => {
+  const previousKey = process.env.FRED_API_KEY;
+  delete process.env.FRED_API_KEY;
+  for (const providerId of ["akshare_sge", "gold_api", "frankfurter"])
+    memory.configs.set(providerId, {
+      ...(await providerConfig(providerId)),
+      enabled: false,
+    });
+  try {
+    const result = await refreshPreview();
+    expect(result.results).toContainEqual({
+      seriesId: "FRED_NASDAQ100",
+      status: "not_configured",
+    });
+    expect(result.results).toContainEqual({
+      seriesId: "FRED_SP500",
+      status: "not_configured",
+    });
+  } finally {
+    for (const providerId of ["akshare_sge", "gold_api", "frankfurter"])
+      memory.configs.delete(providerId);
+    if (previousKey) process.env.FRED_API_KEY = previousKey;
+  }
+});
 import { promisify } from "node:util";
 import { execFile } from "node:child_process";
 import { resolve } from "node:path";

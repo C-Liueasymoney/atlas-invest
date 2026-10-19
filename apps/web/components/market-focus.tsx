@@ -63,6 +63,19 @@ export function frequencyDescription(series?: Series) {
     "待确认频率"
   );
 }
+export function isDashboardFocusSeries(series: Series) {
+  return (
+    series.kind === "ohlc" ||
+    series.id === "FX_USDCNY_D1" ||
+    series.category === "equity_index"
+  );
+}
+function marketDescription(series?: Series) {
+  if (series?.providerId === "akshare_sge" || series?.id.startsWith("SGE_"))
+    return "上海黄金交易所";
+  if (series?.category === "equity_index") return "美国股票指数";
+  return series?.providerId || "上海黄金交易所";
+}
 export function MarketHero({
   series,
   quote,
@@ -80,19 +93,18 @@ export function MarketHero({
     <section className="market-hero" aria-label="主要行情">
       <div className="symbol-heading">
         <div className="symbol-avatar">
-          {series?.category === "gold" ? "Au" : series?.currency || "Au"}
+          {series?.category === "gold"
+            ? "Au"
+            : series?.category === "equity_index"
+              ? "IDX"
+              : series?.currency || "Au"}
         </div>
         <div>
           <h1>{title}</h1>
           <div className="symbol-caption">
             <span>{series?.providerSymbol || "Au99.99"}</span>
             <span>·</span>
-            <span>
-              {series?.providerId === "akshare_sge" ||
-              series?.id.startsWith("SGE_")
-                ? "上海黄金交易所"
-                : series?.providerId || "上海黄金交易所"}
-            </span>
+            <span>{marketDescription(series)}</span>
             <span>·</span>
             <span>{frequencyDescription(series)}</span>
           </div>

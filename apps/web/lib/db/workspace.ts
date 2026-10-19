@@ -32,7 +32,14 @@ export function defaultWorkspace(): Workspace {
       {
         id: "20000000-0000-4000-8000-000000000001",
         name: "我的观察",
-        items: ["SGE_AU9999_D1", "XAUUSD_QUOTE", "FX_USDCNY_D1", "FRED_DFII10"],
+        items: [
+          "SGE_AU9999_D1",
+          "XAUUSD_QUOTE",
+          "FX_USDCNY_D1",
+          "FRED_DFII10",
+          "FRED_NASDAQ100",
+          "FRED_SP500",
+        ],
       },
     ],
     alerts: [],

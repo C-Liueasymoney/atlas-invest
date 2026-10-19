@@ -11,6 +11,8 @@ rows=[
 ('FRED_CPIAUCSL','美国CPI指数（月度）','fred','CPIAUCSL','observation','1mo','index','USD','US','macro',5184000),
 ('FRED_CPILFESL','美国核心CPI指数（月度）','fred','CPILFESL','observation','1mo','index','USD','US','macro',5184000),
 ('FRED_DTWEXBGS','美国广义名义美元指数（非DXY）','fred','DTWEXBGS','observation','1d','index','USD','US','macro',432000),
+('FRED_NASDAQ100','纳斯达克100指数','fred','NASDAQ100','observation','1d','index','USD','US','index_close',432000),
+('FRED_SP500','标普500指数','fred','SP500','observation','1d','index','USD','US','index_close',432000),
 ('DERIVED_XAU_CNYG','国际黄金折算人民币克价','derived','XAU*CNY/31.1034768','derived','quote','CNY/g','CNY','global','derived',432000),
 ('DERIVED_SGE_PREMIUM','国内现货相对折算价格差','derived','SGE-XAUCNYG','derived','quote','CNY/g','CNY','SGE','derived',432000),
 ('WGC_ETF_FLOW_GLOBAL_M','全球实物黄金ETF月资金流','wgc_import','ETF_FLOW','imported','1mo','USD','USD','global','flow',7776000),
@@ -19,5 +21,5 @@ rows=[
 urls={'akshare_sge':'https://www.sge.com.cn/sjzx/mrhq','gold_api':'https://gold-api.com/','frankfurter':'https://frankfurter.dev/','fred':'https://fred.stlouisfed.org/','wgc_import':'https://www.gold.org/goldhub/data','cftc':'https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm','derived':'https://www.lbma.org.uk/'}
 result=[]
 for id,name,provider,symbol,kind,freq,unit,currency,market,definition,stale in rows:
- result.append(dict(id=id,nameZh=name,providerId=provider,providerSymbol=symbol,kind=kind,frequency=freq,unit=unit,currency=currency,market=market,priceDefinition=definition,timezone='Asia/Shanghai' if market=='SGE' else 'UTC',staleSeconds=stale,sourceUrl=urls[provider]+('series/'+symbol if provider=='fred' else ''),description=('统计观察日，缺失值保留为空。' if provider=='fred' else '参考数据，仅用于个人研究；数据时间与采集时间分开显示。'),category='macro' if provider=='fred' else 'gold',enabled=True))
+ result.append(dict(id=id,nameZh=name,providerId=provider,providerSymbol=symbol,kind=kind,frequency=freq,unit=unit,currency=currency,market=market,priceDefinition=definition,timezone='Asia/Shanghai' if market=='SGE' else ('America/New_York' if definition=='index_close' else 'UTC'),staleSeconds=stale,sourceUrl=urls[provider]+('series/'+symbol if provider=='fred' else ''),description=(f'FRED发布的{name}日收盘观察值；不是ETF、期货或盘中报价。' if definition=='index_close' else ('统计观察日，缺失值保留为空。' if provider=='fred' else '参考数据，仅用于个人研究；数据时间与采集时间分开显示。')),category='equity_index' if definition=='index_close' else ('macro' if provider=='fred' else 'gold'),enabled=True))
 Path('config/indicators.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n')

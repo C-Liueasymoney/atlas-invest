@@ -8,6 +8,18 @@ test("overview puts the actual source quote before the large chart and isolates 
   const { items } = await response.json();
   const quote = items[0];
   await page.goto("/dashboard");
+  const focusSelect = page.getByLabel("选择主图指标");
+  await expect(
+    focusSelect.getByRole("option", { name: "纳斯达克100指数" }),
+  ).toHaveCount(1);
+  await expect(
+    focusSelect.getByRole("option", { name: "标普500指数" }),
+  ).toHaveCount(1);
+  await focusSelect.selectOption("FRED_NASDAQ100");
+  await expect(
+    page.getByRole("heading", { name: "纳斯达克100指数", exact: true }),
+  ).toBeVisible();
+  await focusSelect.selectOption("SGE_AU9999_D1");
   await expect(
     page.getByRole("heading", { name: "国内黄金 Au99.99", exact: true }),
   ).toBeVisible();

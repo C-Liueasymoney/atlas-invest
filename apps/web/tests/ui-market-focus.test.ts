@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   focusPrice,
   frequencyDescription,
+  isDashboardFocusSeries,
   MarketHero,
   quoteChange,
 } from "../components/market-focus";
@@ -43,6 +44,49 @@ describe("market quote hierarchy and honesty", () => {
       frequencyDescription({ ...series, id: "WEEKLY", frequency: "1w" }),
     ).toBe("周度观察");
     expect(frequencyDescription(series)).toBe("日线收盘 · CNY/g");
+  });
+  it("allows the two daily equity indexes in the dashboard focus while excluding unrelated macro indexes", () => {
+    expect(
+      isDashboardFocusSeries({
+        ...series,
+        id: "FRED_NASDAQ100",
+        category: "equity_index",
+      }),
+    ).toBe(true);
+    expect(
+      isDashboardFocusSeries({
+        ...series,
+        id: "FRED_SP500",
+        category: "equity_index",
+      }),
+    ).toBe(true);
+    expect(
+      isDashboardFocusSeries({
+        ...series,
+        id: "FRED_CPIAUCSL",
+        category: "macro",
+        frequency: "1mo",
+      }),
+    ).toBe(false);
+  });
+  it("labels an equity index as a US stock index rather than exposing a provider id", () => {
+    const html = renderToStaticMarkup(
+      createElement(MarketHero, {
+        series: {
+          ...series,
+          id: "FRED_SP500",
+          nameZh: "标普500指数",
+          providerId: "fred",
+          providerSymbol: "SP500",
+          category: "equity_index",
+          unit: "index",
+        },
+        quote: { ...quote, seriesId: "FRED_SP500", unit: "index" },
+      }),
+    );
+    expect(html).toContain('<div class="symbol-avatar">IDX</div>');
+    expect(html).toContain("美国股票指数");
+    expect(html).not.toContain("·fred·");
   });
   it("uses the actual daily close with two decimals and a change from the preceding valid observation", () => {
     expect(focusPrice(quote)).toBe("901.57");

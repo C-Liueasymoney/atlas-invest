@@ -27,6 +27,8 @@ const defaults = [
   "FRED_DFII10",
   "FRED_DGS10",
   "FRED_DTWEXBGS",
+  "FRED_NASDAQ100",
+  "FRED_SP500",
 ];
 const specified = process.argv.indexOf("--series");
 const ids = specified >= 0 ? [process.argv[specified + 1]] : defaults;

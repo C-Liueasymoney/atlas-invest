@@ -3,6 +3,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import catalog from "../../../config/indicators.json";
+import { defaultWorkspace } from "@/lib/db/workspace";
 describe("normalized PostgreSQL schema", () => {
   it("accepts an initial migration twice, preserves decimal OHLC and rejects impossible bars", async () => {
     const db = new PGlite();
@@ -33,6 +34,29 @@ describe("normalized PostgreSQL schema", () => {
     expect(catalog.find((s) => s.id === "SGE_AU9999_D1")?.priceDefinition).toBe(
       "spot",
     );
-    expect(new Set(catalog.map((s) => s.id)).size).toBe(15);
+    expect(new Set(catalog.map((s) => s.id)).size).toBe(17);
+  });
+  it("registers the actual Nasdaq-100 and S&P 500 daily index series and adds them to a new watchlist", () => {
+    expect(catalog.find((s) => s.id === "FRED_NASDAQ100")).toMatchObject({
+      providerId: "fred",
+      providerSymbol: "NASDAQ100",
+      kind: "observation",
+      frequency: "1d",
+      unit: "index",
+      market: "US",
+      priceDefinition: "index_close",
+    });
+    expect(catalog.find((s) => s.id === "FRED_SP500")).toMatchObject({
+      providerId: "fred",
+      providerSymbol: "SP500",
+      kind: "observation",
+      frequency: "1d",
+      unit: "index",
+      market: "US",
+      priceDefinition: "index_close",
+    });
+    const watchlist = defaultWorkspace().watchlists[0].items;
+    expect(watchlist).toContain("FRED_NASDAQ100");
+    expect(watchlist).toContain("FRED_SP500");
   });
 });

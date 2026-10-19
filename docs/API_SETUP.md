@@ -2,7 +2,7 @@
 
 进入 `/settings/data-sources`。一个 Provider 使用一套凭据，旗下所有已注册指标复用；不按指标重复申请 Key。
 
-- **FRED**：在 https://fred.stlouisfed.org/docs/api/api_key.html 申请免费 Key。服务端 `.env` 设置 `FRED_API_KEY`；重启后连接测试只探测 DFII10。未配置时明确返回 not_configured。
+- **FRED**：在 [FRED API Keys](https://fredaccount.stlouisfed.org/apikeys) 登录并申请免费 Key，说明见[官方文档](https://fred.stlouisfed.org/docs/api/api_key.html)。服务端 `.env` 设置 `FRED_API_KEY` 后重启并刷新数据；同一 Key 为 `FRED_NASDAQ100`、`FRED_SP500` 及其他 FRED 宏观序列复用。连接测试只探测 DFII10；未配置时明确返回 not_configured。
 - **Gold API**：当前 XAU/USD 最新参考价无需 Key，最短缓存30秒并尊重 Cache-Control。`GOLD_API_KEY` 仅保留给将来历史功能；当前不会请求历史 endpoint，也不会虚构历史K线。
 - **Frankfurter**：无需 Key，USD/CNY 日度参考汇率，不能用作盘中成交汇率或 USD/CNH。
 - **AKShare / SGE**：无需 Key。安装 Python collector 后可采集 Au99.99 日线。公开页面接口可能失效；最新报价源时间在2026-10-16实测异常，正确拒绝，不替换为抓取时间。

@@ -22,6 +22,8 @@ export DATA_MODE=live
 # 使用安全的环境管理方式注入 DATABASE_URL 和可选 FRED_API_KEY
 services/collector/.venv/bin/python -m atlas_collector backfill --series SGE_AU9999_D1
 services/collector/.venv/bin/python -m atlas_collector sync --series FRED_DFII10
+services/collector/.venv/bin/python -m atlas_collector sync --series FRED_NASDAQ100
+services/collector/.venv/bin/python -m atlas_collector sync --series FRED_SP500
 ```
 
 默认首次采集最近三年，已有非报价序列的 `sync` 从最近数据日期前14个自然日重查，以覆盖正常情况下至少7个交易日。`backfill` 总是使用完整日期范围；可显式传 `--start YYYY-MM-DD --end YYYY-MM-DD`。指标从 `config/indicators.json` 注册，`ATLAS_CATALOG_PATH` 可指定部署时的绝对目录。添加 FRED 指标不需要复制凭据或修改图表。
@@ -40,6 +42,8 @@ services/collector/.venv/bin/python -m atlas_collector sync --series FRED_DFII10
 
 FRED `.` 转为 SQL NULL，不转为0。`realtime_start` 是实时查询区间信息，不伪装发布时间；未知 `published_at/observed_at` 留空。修订前的 latest 值以稳定的 `revised:<hash>` 保存，新的 latest 值原地更新。Frankfurter 保持实际响应日期和 USD/CNY 配对；不是 USD/CNH，也不是盘中成交价。Gold API 必须有可解析且含时区的 `updatedAt`。
 
+`FRED_NASDAQ100` 与 `FRED_SP500` 分别映射官方 `NASDAQ100`、`SP500` 日收盘观察值。它们不是 QQQ/SPY ETF、指数期货或盘中行情；看板按 FRED 发布的观察日显示。配置一枚 `FRED_API_KEY` 即可与利率、CPI、美元指数等序列共用。
+
 ## 幂等、故障与缓存
 
 单 series 会话 advisory lock 覆盖拉取和写入；同一 series 并行作业返回 `already_running`。批次在 PostgreSQL 事务内 upsert；相同记录不更新采集时间、不制造修订；修改过的日线标记 `is_revised`。报价禁止较旧源时间覆盖较新报价。
@@ -56,7 +60,7 @@ Gold API 缓存由数据库跨进程共享，短于30秒的头不会缩短缓存
 - Frankfurter：10月1日至16日共16条，16日参考 USD/CNY=`6.6853`。
 - Gold API：数据时间 `2026-10-16T14:34:37Z`，参考报价 `4192.399902 USD/troy_oz`。
 - SGE 最新报价：源端 `更新时间=2026年10月19日 22:32:57`，当时实际为16日晚。疑似夜盘使用下个交易日标签；在官方交易日历/节假日映射尚未验证前返回 `invalid_timestamp`，保留旧报价。此路径不能声称已通过最新报价写入验收。
-- FRED：环境无 Key，真实认证及数据拉取未验证；返回 `not_configured`。标准化、缺失值、分页用官方结构样本测试。
+- FRED：当前开发环境无 Key，`NASDAQ100`、`SP500` 与其他 FRED 序列的真实认证及数据拉取尚未验证；返回 `not_configured`。标准化、缺失值、分页用官方结构样本测试。
 
 Alpha Vantage/FMP/Yahoo、WGC文件导入不在此Python采集器中；WGC上传另见 IMPORTS.md。CFTC适配器已实现并实测，不能将 Provider 配置模板误写为已经通过采集验证。上游授权和再分发条款需按用途核查，AKShare 不提供交易所商业授权保证。
 

@@ -98,6 +98,8 @@ export async function refreshPreview(seriesId?: string) {
         "FRED_DFII10",
         "FRED_DGS10",
         "FRED_DTWEXBGS",
+        "FRED_NASDAQ100",
+        "FRED_SP500",
       ];
   const results: {
     seriesId: string;

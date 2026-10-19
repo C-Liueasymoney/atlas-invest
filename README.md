@@ -21,6 +21,18 @@ npm run dev
 
 显式设 `DATA_MODE=demo` 可离线体验合成图表；行情接口带 `isDemo:true`，首页报价留空并标「演示数据」。Demo不是市场报价。
 
+### 配置免费的 FRED 数据
+
+纳斯达克100指数和标普500指数使用 FRED 的官方日收盘序列 `NASDAQ100`、`SP500`。同一枚免费 Key 也可读取本项目中的美国利率、CPI 和美元指数。
+
+1. 登录 [FRED API Keys](https://fredaccount.stlouisfed.org/apikeys)，创建并复制一枚 Key。申请说明见 [FRED 官方文档](https://fred.stlouisfed.org/docs/api/api_key.html)。
+2. 仓库根目录还没有 `.env` 时先运行 `npm run setup:local`；已有时不要覆盖。
+3. 编辑根目录 `.env`，将 `FRED_API_KEY=` 改成 `FRED_API_KEY=你的Key`。不要把 Key 发到聊天、截图或提交到 Git。
+4. 运行 `npm run data:refresh`，再运行或重启 `npm run dev`。
+5. 打开 `/dashboard`，在「选择主图指标」中切换到「纳斯达克100指数」或「标普500指数」。显示的是日收盘观察值，不是 QQQ、SPY、期货或盘中报价。
+
+没有 Key 时两个指数仍会出现在看板选择器和自选中，但数值保持空白并显示未配置，不会用演示价格替代。
+
 ## 接入真实数据
 
 先安装 Docker（或自行准备 PostgreSQL >=17）与兼容的 Python 3.12/3.13，然后：
@@ -62,7 +74,7 @@ services/collector/.venv/bin/python -m atlas_collector sync --series SGE_AU9999_
 
 2026-10-17复核：最新交易日10月16日，Au99.99收盘901.57 CNY/g、前有效收盘892.96；+8.61、+0.96%。OHLC与上金所官方日报逐字段一致。三年滚动窗口当日728根日K。该数值是当次真实采集证据，未固定seed为正式报价；SGE分钟报价返回未来交易日标签，适配器继续拒绝。详见 [价格复核记录](docs/PRICE_VERIFICATION.md)。
 
-FRED命令将同一Key复用于`FRED_DFII10`、`FRED_DGS10`和其他catalog序列；Frankfurter：`--series FX_USDCNY_D1`；Gold：`--series XAUUSD_QUOTE`；CFTC：`--series CFTC_GOLD_NET_SPEC_W`。实际参数见`--help`。
+FRED命令将同一Key复用于`FRED_NASDAQ100`、`FRED_SP500`、`FRED_DFII10`、`FRED_DGS10`和其他catalog序列；Frankfurter：`--series FX_USDCNY_D1`；Gold：`--series XAUUSD_QUOTE`；CFTC：`--series CFTC_GOLD_NET_SPEC_W`。实际参数见`--help`。
 
 ## 验证与部署
 

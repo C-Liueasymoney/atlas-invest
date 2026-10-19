@@ -1,6 +1,6 @@
 # 实施状态
 
-**当前：V1核心可运行并已验证；严格规格尚未全部验收，M4部分完成。GitHub推送受本机凭据阻塞。**
+**当前：V1核心可运行并已验证；严格规格尚未全部验收，M4部分完成。分支已完成手动推送，后续提交继续使用已配置的本机凭据。**
 
 以各阶段实际命令输出为准；不把本地 build 视为 GitHub CI 成功。
 
@@ -104,3 +104,10 @@ M3 commit `802d295` — `feat(alerts): add persistent rules, validated imports a
 
 本轮实现提交 `39a639f` — `feat(market): focus gold overview and replace default synthetic quotes with verified preview`。
 分支 `codex/atlas-v1`，origin `https://github.com/C-Liueasymoney/atlas-invest.git`。本轮HTTPS已到达远端，但GitHub拒绝推送：当前Personal Access Token缺少 `workflow` scope，不能创建/更新历史中的 `.github/workflows/ci.yml`。这取代了此前无本机凭据的具体阻塞；不是代码检查失败。需使用具备该仓库代码及工作流写入权限的凭据，之后重新执行 `git push -u origin codex/atlas-v1`。没有移除CI以绕过权限、没有强推，全部本地阶段历史保留。
+
+## 2026-10-19 — 美国股票指数追踪
+
+- Catalog 新增 FRED `NASDAQ100` 与 `SP500`，分别展示纳斯达克100指数、标普500指数的官方日收盘观察值；明确不以 QQQ、SPY、期货或盘中报价替代。
+- 两个指数加入默认自选、首页刷新和主图选择器；首页以“美国股票指数 / IDX / 日度观察”突出语义。无 Key 时保留入口并明确留空，不回退到 Demo 数值。
+- 共用服务端 `FRED_API_KEY`，无数据库迁移。当前本机没有 `.env`，真实 FRED 认证与取数需用户配置免费 Key 后完成。
+- 功能级测试覆盖 catalog、默认自选、刷新名单、主图筛选及指数文案。验证通过：格式、lint、strict typecheck、production build、Web 65 项、Python 18 项及 Playwright 8 条；本机未配置测试数据库，9 项 Python PostgreSQL 集成测试明确跳过。

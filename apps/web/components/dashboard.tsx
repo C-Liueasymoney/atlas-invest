@@ -31,7 +31,11 @@ import {
 import { IndicatorTable, MetricWidget, SourceHealth } from "./market";
 import { PriceChart } from "./charts";
 import { CompareChart } from "./compare";
-import { MarketHero, RelatedMarkets } from "./market-focus";
+import {
+  isDashboardFocusSeries,
+  MarketHero,
+  RelatedMarkets,
+} from "./market-focus";
 type Dashboard = {
   id: string;
   name: string;
@@ -78,6 +82,8 @@ export function DashboardPage() {
     "FRED_DFII10",
     "FRED_DGS10",
     "FRED_DTWEXBGS",
+    "FRED_NASDAQ100",
+    "FRED_SP500",
   ]
     .map((id) => catalog.data?.items.find((s) => s.id === id))
     .filter((s): s is Series => !!s);
@@ -148,19 +154,17 @@ export function DashboardPage() {
       <div className="market-breadcrumb">
         <Link href="/indicators">市场</Link>
         <span>›</span>
-        <span>黄金与宏观</span>
+        <span>黄金、指数与宏观</span>
         <select
           aria-label="选择主图指标"
           value={focus}
           onChange={(e) => setFocus(e.target.value)}
         >
-          {catalog.data?.items
-            .filter((s) => s.kind === "ohlc" || s.id === "FX_USDCNY_D1")
-            .map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.nameZh}
-              </option>
-            ))}
+          {catalog.data?.items.filter(isDashboardFocusSeries).map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.nameZh}
+            </option>
+          ))}
         </select>
       </div>
       <ErrorNotice
