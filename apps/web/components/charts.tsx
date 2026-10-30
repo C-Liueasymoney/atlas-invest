@@ -6,6 +6,7 @@ import {
   CandlestickSeries,
   ColorType,
   createChart,
+  CrosshairMode,
   LineSeries,
   LineType,
   type Time,
@@ -234,7 +235,7 @@ export function ChartCanvas({
         timeVisible: false,
       },
       crosshair: {
-        mode: 0,
+        mode: CrosshairMode.Magnet,
         vertLine: { labelBackgroundColor: "#46556b" },
         horzLine: { labelBackgroundColor: "#46556b" },
       },
