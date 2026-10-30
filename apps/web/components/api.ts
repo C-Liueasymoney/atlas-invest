@@ -148,7 +148,7 @@ export function useRemote<T>(path: string | null) {
       live = false;
     };
   }, [path, version]);
-  return { data, error, loading, refresh };
+  return { data, error, loading, refresh, setData };
 }
 export const json = (method: string, body?: unknown): RequestInit => ({
   method,

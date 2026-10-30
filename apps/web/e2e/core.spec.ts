@@ -39,7 +39,18 @@ test("demo dashboard is honest, usable and persists a widget", async ({
   await page.getByRole("button", { name: "保存布局", exact: true }).click();
   await expect(page.getByText("看板布局已保存")).toBeVisible();
 });
-test("catalog search, watchlist addition and alerts CRUD", async ({ page }) => {
+test("catalog search, watchlist addition and alerts CRUD", async ({
+  page,
+  request,
+}) => {
+  const response = await request.get("/api/v1/watchlists");
+  const { items: lists } = await response.json();
+  if (lists[0]) {
+    const removed = await request.delete(
+      `/api/v1/watchlists/${lists[0].id}/items/FRED_DFII10`,
+    );
+    expect(removed.ok()).toBeTruthy();
+  }
   await page.goto("/indicators");
   await page.getByRole("textbox", { name: "搜索指标目录" }).fill("DFII10");
   await expect(
@@ -49,6 +60,9 @@ test("catalog search, watchlist addition and alerts CRUD", async ({ page }) => {
   ).toBeVisible();
   await page.getByRole("button", { name: "收藏 美国10年期实际收益率" }).click();
   await expect(page.getByText("已加入观察列表")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "取消收藏 美国10年期实际收益率" }),
+  ).toHaveAttribute("aria-pressed", "true");
   await page.goto("/alerts");
   await page.getByRole("button", { name: "新建预警" }).click();
   await page.getByRole("button", { name: "保存预警规则" }).click();

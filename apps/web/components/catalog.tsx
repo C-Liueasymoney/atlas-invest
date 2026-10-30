@@ -2,27 +2,13 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ArrowDownToLine, ArrowUpRight, Search, Star } from "lucide-react";
-import {
-  api,
-  json,
-  unitLabel,
-  frequencyLabel,
-  Quote,
-  Series,
-  useRemote,
-} from "./api";
-import {
-  ActionFeedback,
-  Empty,
-  ErrorNotice,
-  Loading,
-  PageHeading,
-  useAction,
-} from "./ui";
+import { unitLabel, frequencyLabel, Quote, Series, useRemote } from "./api";
+import { ActionFeedback, Empty, ErrorNotice, Loading, PageHeading } from "./ui";
 import { ImportHistory } from "./provenance";
 import { RiskPanel } from "./risk";
 import { MarketHero } from "./market-focus";
 import { PriceChart } from "./charts";
+import { useFavorites } from "./use-favorites";
 export function CatalogPage() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
@@ -30,7 +16,7 @@ export function CatalogPage() {
     `/api/v1/catalog?q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}`,
   );
   const all = useRemote<{ items: Series[] }>("/api/v1/catalog");
-  const action = useAction();
+  const favorites = useFavorites();
   return (
     <>
       <PageHeading
@@ -62,7 +48,8 @@ export function CatalogPage() {
           {remote.data?.items.length ?? "—"} 项指标
         </span>
       </div>
-      <ActionFeedback action={action} />
+      <ActionFeedback action={favorites.action} />
+      <ErrorNotice message={favorites.error} retry={favorites.refresh} />
       <ErrorNotice message={remote.error} retry={remote.refresh} />
       {remote.loading ? (
         <Loading />
@@ -76,12 +63,17 @@ export function CatalogPage() {
                 <span className="category-label">{s.category}</span>
                 <button
                   className="icon-button"
-                  aria-label={`收藏 ${s.nameZh}`}
-                  onClick={() =>
-                    action.run(() => addToWatchlist(s.id), "已加入观察列表")
-                  }
+                  aria-label={`${favorites.has(s.id) ? "取消收藏" : "收藏"} ${s.nameZh}`}
+                  aria-pressed={favorites.has(s.id)}
+                  disabled={favorites.disabled}
+                  onClick={() => favorites.toggle(s.id)}
                 >
-                  <Star size={17} />
+                  <Star
+                    size={17}
+                    className={
+                      favorites.has(s.id) ? "favorite-star" : undefined
+                    }
+                  />
                 </button>
               </div>
               <Link href={`/indicators/${s.id}`}>
@@ -111,18 +103,6 @@ export function CatalogPage() {
     </>
   );
 }
-export async function addToWatchlist(seriesId: string) {
-  const lists = await api<{ items: { id: string }[] }>("/api/v1/watchlists");
-  let id = lists.items[0]?.id;
-  if (!id) {
-    const list = await api<{ id: string }>(
-      "/api/v1/watchlists",
-      json("POST", { name: "我的观察列表" }),
-    );
-    id = list.id;
-  }
-  await api(`/api/v1/watchlists/${id}/items`, json("POST", { seriesId }));
-}
 export function IndicatorDetail({ id }: { id: string }) {
   const remote = useRemote<Series>(
     `/api/v1/series/${encodeURIComponent(id)}/metadata`,
@@ -130,7 +110,7 @@ export function IndicatorDetail({ id }: { id: string }) {
   const latest = useRemote<{ items: Quote[] }>(
     `/api/v1/quotes?seriesIds=${encodeURIComponent(id)}`,
   );
-  const action = useAction();
+  const favorites = useFavorites();
   const s = remote.data;
   return (
     <>
@@ -151,13 +131,17 @@ export function IndicatorDetail({ id }: { id: string }) {
               actions={
                 <>
                   <button
-                    onClick={() =>
-                      action.run(() => addToWatchlist(id), "已加入观察列表")
-                    }
-                    disabled={action.busy}
+                    onClick={() => favorites.toggle(id)}
+                    disabled={favorites.disabled}
+                    aria-pressed={favorites.has(id)}
                   >
-                    <Star size={15} />
-                    加入自选
+                    <Star
+                      size={15}
+                      className={
+                        favorites.has(id) ? "favorite-star" : undefined
+                      }
+                    />
+                    {favorites.has(id) ? "取消自选" : "加入自选"}
                   </button>
                   <a
                     className="button"
@@ -169,7 +153,8 @@ export function IndicatorDetail({ id }: { id: string }) {
                 </>
               }
             />
-            <ActionFeedback action={action} />
+            <ActionFeedback action={favorites.action} />
+            <ErrorNotice message={favorites.error} retry={favorites.refresh} />
             <ErrorNotice message={latest.error} retry={latest.refresh} />
             <div className="focus-tabs detail-tabs">
               <a href="#price-chart">图表</a>

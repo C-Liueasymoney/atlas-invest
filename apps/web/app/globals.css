@@ -3794,3 +3794,9 @@ dd {
     margin-top: 16px;
   }
 }
+
+/* Saved favorites stay visible on both catalog cards and detail actions. */
+.favorite-star {
+  color: #eab308;
+  fill: #eab308;
+}
