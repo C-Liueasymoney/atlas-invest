@@ -313,7 +313,23 @@ export async function testConnection(id: string): Promise<Health> {
     interval = "quote",
     symbol = "XAU";
   try {
-    if (["akshare_sge", "cftc"].includes(id)) {
+    if (id === "tencent_index") {
+      symbol = "us.NDX";
+      const { latestIndex } = await import("../latest-index");
+      const sample = (await latestIndex("FRED_NASDAQ100", true)).items[0];
+      if (sample.source.id !== "tencent_index" || sample.status === "stale")
+        throw new AppError(
+          "SOURCE_UNAVAILABLE",
+          sample.message || "指数来源不可用",
+        );
+      h = {
+        providerId: id,
+        status: "available",
+        checkedAt,
+        sampleDataAsOf: sample.asOf || undefined,
+        message: "实际纳斯达克100指数参考报价已验证；并非专业实时授权。",
+      };
+    } else if (["akshare_sge", "cftc"].includes(id)) {
       const seriesId =
         id === "akshare_sge" ? "SGE_AU9999_D1" : "CFTC_GOLD_NET_SPEC_W";
       symbol = id === "akshare_sge" ? "Au99.99" : "088691";

@@ -28,6 +28,7 @@ try {
       alpha_vantage: "Alpha Vantage",
       fmp: "FMP",
       yahoo: "Yahoo (disabled)",
+      tencent_index: "腾讯财经 · 美股指数参考行情",
       derived: "Derived",
       wgc_import: "WGC manual import",
       cftc: "CFTC",

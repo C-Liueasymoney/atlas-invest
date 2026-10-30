@@ -107,9 +107,11 @@ export function MarketHero({
             <span>{marketDescription(series)}</span>
             <span>·</span>
             <span>
-              {quote?.qualityFlags?.includes("official_delayed_snapshot")
-                ? "最新延时行情 · CNY/g"
-                : frequencyDescription(series)}
+              {quote?.qualityFlags?.includes("index_quote_snapshot")
+                ? "最新指数参考报价"
+                : quote?.qualityFlags?.includes("official_delayed_snapshot")
+                  ? "最新延时行情 · CNY/g"
+                  : frequencyDescription(series)}
             </span>
           </div>
         </div>

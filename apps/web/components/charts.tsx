@@ -20,7 +20,9 @@ import {
   Series,
   formatValue,
   useRemote,
+  type Quote,
 } from "./api";
+import { withLatestQuote } from "../lib/chart-latest";
 import { Badge, Empty, ErrorNotice, Loading } from "./ui";
 export const ranges = ["1M", "3M", "6M", "1Y", "3Y", "ALL"];
 export function rangeFrom(range: string) {
@@ -38,12 +40,16 @@ export function PriceChart({
   chartType: initialType = "line",
   onConfig,
   compact = false,
+  latestQuote,
+  history,
 }: {
   seriesId: string;
   range?: string;
   chartType?: string;
   onConfig?: (patch: { range?: string; chartType?: string }) => void;
   compact?: boolean;
+  latestQuote?: Quote;
+  history?: Envelope;
 }) {
   const [range, setRange] = useState(initialRange);
   const [type, setType] = useState(initialType);
@@ -51,17 +57,28 @@ export function PriceChart({
     `/api/v1/series/${encodeURIComponent(seriesId)}/metadata`,
   );
   const remote = useRemote<Envelope>(
-    metadata.data
+    metadata.data && !history
       ? `/api/v1/series/${encodeURIComponent(seriesId)}/${metadata.data.kind === "ohlc" ? "bars" : "observations"}?interval=1d&from=${rangeFrom(range)}`
       : null,
   );
-  const data = remote.data;
+  const data = history
+    ? {
+        ...history,
+        points: history.points.filter((p) => p.time >= rangeFrom(range)),
+      }
+    : remote.data;
+  const plotted = data
+    ? withLatestQuote(data.points, latestQuote, data.series.timezone)
+    : [];
   const hasOhlc = !!data?.points.some(
     (p) => p.open != null && p.high != null && p.low != null && p.close != null,
   );
   const actualType = hasOhlc && type === "candlestick" ? "candlestick" : "line";
   return (
-    <div className={`price-chart ${compact ? "compact-chart" : ""}`}>
+    <div
+      className={`price-chart ${compact ? "compact-chart" : ""}`}
+      data-chart-points={plotted.length}
+    >
       <div className="chart-toolbar">
         <div className="range-buttons">
           {ranges.map((r) => (
@@ -108,28 +125,30 @@ export function PriceChart({
           metadata.refresh();
         }}
       />
-      {remote.loading || metadata.loading ? (
+      {(!history && remote.loading) || metadata.loading ? (
         <Loading />
       ) : data &&
-        data.points.some((p) => p.value !== null || p.close !== undefined) ? (
+        plotted.some((p) => p.value !== null || p.close !== undefined) ? (
         <ChartCanvas
           type={actualType}
           lines={[
             {
               name: data.series.nameZh,
               color: "#2962ff",
-              points: data.points.map((p) => ({
-                time: p.time,
-                value: p.value === null ? null : Number(p.value),
-                ...(p.open !== undefined
-                  ? {
-                      open: Number(p.open),
-                      high: Number(p.high),
-                      low: Number(p.low),
-                      close: Number(p.close),
-                    }
-                  : {}),
-              })),
+              points: (actualType === "line" ? plotted : data.points).map(
+                (p) => ({
+                  time: p.time,
+                  value: p.value === null ? null : Number(p.value),
+                  ...(p.open !== undefined
+                    ? {
+                        open: Number(p.open),
+                        high: Number(p.high),
+                        low: Number(p.low),
+                        close: Number(p.close),
+                      }
+                    : {}),
+                }),
+              ),
             },
           ]}
           step={["monthly", "weekly", "1mo", "1w"].includes(
@@ -147,11 +166,26 @@ export function PriceChart({
       )}
       {data && (
         <div className="chart-provenance">
+          {history && (
+            <p>
+              历史范围以来源当前可提供的日线为限（最多320条）；最新报价点单独展示。
+            </p>
+          )}
+          {latestQuote && !latestQuote.isDemo && latestQuote.value != null && (
+            <p data-testid="chart-latest-point" data-value={latestQuote.value}>
+              最新报价点 {formatValue(latestQuote.value)}{" "}
+              {unitLabel(latestQuote.unit)} · {latestQuote.source.label} ·{" "}
+              {latestQuote.asOfKind === "date"
+                ? latestQuote.asOf
+                : dateTime(latestQuote.asOf)}{" "}
+              · 折线末端参考报价，非新增日收盘
+            </p>
+          )}
           <div>
             <Badge status={data.isDemo ? "demo" : data.status} />
             <span>
               {unitLabel(data.unit)} · {frequencyLabel(data.series.frequency)} ·
-              Asia/Shanghai
+              {data.series.timezone}
             </span>
           </div>
           <div>

@@ -102,14 +102,20 @@ export function DashboardPage() {
   const [refreshMessage, setRefreshMessage] = useState("");
   const [refreshVersion, setRefreshVersion] = useState(0);
   const focusSeries = catalog.data?.items.find((s) => s.id === focus);
-  const focusQuote = useRemote<{ items: Quote[] }>(
+  const isIndex = ["FRED_NASDAQ100", "FRED_SP500"].includes(focus);
+  const focusQuote = useRemote<{
+    items: Quote[];
+    history?: import("./api").Envelope;
+  }>(
     focus === "SGE_AU9999_D1"
       ? "/api/v1/market/domestic-quote"
-      : `/api/v1/quotes?seriesIds=${focus}`,
+      : isIndex
+        ? `/api/v1/market/index-quote?seriesId=${focus}`
+        : `/api/v1/quotes?seriesIds=${focus}`,
   );
   const refreshFocusQuote = focusQuote.refresh;
   useEffect(() => {
-    if (focus !== "SGE_AU9999_D1") return;
+    if (focus !== "SGE_AU9999_D1" && !isIndex) return;
     const check = () => {
       if (document.visibilityState === "visible") refreshFocusQuote();
     };
@@ -119,7 +125,7 @@ export function DashboardPage() {
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", check);
     };
-  }, [focus, refreshFocusQuote]);
+  }, [focus, isIndex, refreshFocusQuote]);
   const [draft, setDraft] = useState<Widget[] | null>(null);
   const [editing, setEditing] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -199,12 +205,18 @@ export function DashboardPage() {
                 disabled={refreshAction.busy || !focusSeries}
                 onClick={() =>
                   refreshAction.run(async () => {
-                    const result = await api<{ message?: string }>(
+                    const result = await api<{
+                      message?: string;
+                      items?: Quote[];
+                      history?: import("./api").Envelope;
+                    }>(
                       focus === "SGE_AU9999_D1"
                         ? "/api/v1/market/domestic-quote"
-                        : session.data?.mode === "preview"
-                          ? "/api/v1/market/refresh"
-                          : `/api/providers/${focusSeries?.providerId}/sync`,
+                        : isIndex
+                          ? `/api/v1/market/index-quote?seriesId=${focus}`
+                          : session.data?.mode === "preview"
+                            ? "/api/v1/market/refresh"
+                            : `/api/providers/${focusSeries?.providerId}/sync`,
                       json(
                         "POST",
                         session.data?.mode === "preview"
@@ -212,7 +224,12 @@ export function DashboardPage() {
                           : { seriesId: focus },
                       ),
                     );
-                    focusQuote.refresh();
+                    if (result.items)
+                      focusQuote.setData({
+                        items: result.items,
+                        history: result.history,
+                      });
+                    else focusQuote.refresh();
                     quotes.refresh();
                     setRefreshVersion((v) => v + 1);
                     setRefreshMessage(
@@ -266,6 +283,14 @@ export function DashboardPage() {
               seriesId={focus}
               range="1Y"
               chartType="line"
+              latestQuote={focusQuote.data?.items.find(
+                (q) => q.seriesId === focus,
+              )}
+              history={
+                focusQuote.data?.history?.series.id === focus
+                  ? focusQuote.data.history
+                  : undefined
+              }
             />
           </section>
           <RelatedMarkets

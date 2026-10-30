@@ -1,5 +1,6 @@
 import { previewMode, refreshPreview } from "./market-preview";
 import { latestDomesticGold } from "./latest-gold";
+import { latestIndex } from "./latest-index";
 import {
   authorize,
   assertRuntime,
@@ -89,6 +90,17 @@ export async function dispatch(
     authorize(request);
     if (
       p[0] === "market" &&
+      p[1] === "index-quote" &&
+      ["GET", "POST"].includes(method)
+    )
+      return json(
+        await latestIndex(
+          url.searchParams.get("seriesId") || "",
+          method === "POST",
+        ),
+      );
+    if (
+      p[0] === "market" &&
       p[1] === "domestic-quote" &&
       ["GET", "POST"].includes(method)
     ) {
@@ -131,7 +143,15 @@ export async function dispatch(
         ).split(",");
         if (ids.length > 20)
           throw new AppError("VALIDATION_ERROR", "一次最多20项指标");
-        const items = await Promise.all(ids.map(quote));
+        const items = await Promise.all(
+          ids.map(async (id) =>
+            id === "SGE_AU9999_D1"
+              ? latestDomesticGold()
+              : ["FRED_NASDAQ100", "FRED_SP500"].includes(id)
+                ? (await latestIndex(id)).items[0]
+                : quote(id),
+          ),
+        );
         await evaluateAlerts();
         return json({ items });
       }

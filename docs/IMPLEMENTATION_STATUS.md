@@ -131,3 +131,12 @@ M3 commit `802d295` — `feat(alerts): add persistent rules, validated imports a
 - 部署完成。过程中首次构建自动回退，第二次构建遇到实例全局 OOM，导致 Workbench 与公网暂时超时；原通道随后恢复，无需新增 RAM 权限。同实例“服务部署agent”聊天同时在修复看板 JSON 重复编码问题，最终构建恢复后，本次仅进行凭据和服务验证，未继续并发构建。第二次部署日志 /var/log/atlas-credentials-release-r2.log；代码/旧构建备份 /var/backups/atlas-invest/credentials-release-20261030-r2，另有加密数据库备份。保留这些回滚点。
 - 最终线上验证通过：deploy/verify-credential-flow.py 完整验证 owner API 保存、跨站拒绝、密文、Python读取、无密钥导出、替换与删除；测试 Key 已清理且没有向供应商发送。与定时器相同用户/EnvironmentFile 的 SP500 任务在无 Key 时返回 skipped、退出0。公私网 HTTPS、登录、安全 Cookie、受保护行情、看板/报价和退出均通过，atlas-web/PostgreSQL/Nginx/atlas-collect.timer 均已恢复运行。
 - 现在用户仅需登录 https://47.101.193.94/settings/data-sources，在 FRED 面板保存真实 Key、测试连接并同步指标；以后替换/删除通过网页完成，无需修改配置文件或重启。未持有真实供应商 Key，故不声称已验证 FRED 真实认证和取数。
+
+## 2026-10-31 — 最新报价同步折线及美国指数参考行情
+
+- 国内黄金与两个美国指数的主报价同步到折线末端：同一市场日期替换显示点，新日期追加；不改写历史数据库或日K的OHLC。指数日期按America/New_York处理，范围按钮对供应商日线有效。
+- 新增腾讯财经实际NDX/INX公共参考行情及最多320条同源日线，无需Key；名称、代码、货币和源端时间均校验。手动刷新请求新报价，失败保留最近可信快照，再兜底FRED日收盘。Yahoo实际指数备源默认关闭，ECS访问超时；公共源可能延时，不承诺专业实时。
+- 首页主报价、侧栏报价、主图使用同一最新接口；快照保存在provider_cache，无数据库迁移，只新增tencent_index供应商元数据。既有FRED观察值保留。
+- 本地验证：Web79项通过、2项外网可选测试跳过；单独开启指数外网测试通过；Playwright11条通过，覆盖黄金/指数刷新和折线一致、范围切换。lint、strict typecheck、格式、production build通过。
+- 服务器部署在独立目录构建并保留旧.next及源文件；服务切换前进行临时进程报价验证。生产验证与Git推送结果见本次交付记录。无密钥或数据库资料提交。
+- 回滚：恢复备份.next及源文件即可，新增provider行可保留；缓存不覆盖规范化日收盘历史。

@@ -95,8 +95,98 @@ test("manual gold refresh updates the main price from the latest quote independe
   await expect(page.getByTestId("focus-price")).toContainText("854.76");
   await page.getByRole("button", { name: "刷新数据", exact: true }).click();
   await expect(page.getByTestId("focus-price")).toContainText("833.00");
+  await expect(page.getByTestId("chart-latest-point")).toHaveAttribute(
+    "data-value",
+    "833.00",
+  );
   await expect(page.locator(".symbol-caption")).toContainText("最新延时行情");
   await expect(page.locator(".focus-chart-section")).toBeVisible();
+});
+test("both US indexes use latest quotes and align the line endpoint", async ({
+  page,
+}) => {
+  await page.route("**/api/v1/session", (route) =>
+    route.fulfill({
+      json: { mode: "preview", authenticated: true, localDemo: true },
+    }),
+  );
+  await page.route("**/api/v1/market/index-quote?*", async (route) => {
+    const id = new URL(route.request().url()).searchParams.get("seriesId")!;
+    const ndx = id === "FRED_NASDAQ100",
+      value = ndx ? "28384.85" : "7580.07";
+    const source = {
+      id: "tencent_index",
+      label: "腾讯财经 · 实际指数参考行情",
+      url: "https://gu.qq.com/",
+    };
+    await route.fulfill({
+      json: {
+        items: [
+          {
+            seriesId: id,
+            value,
+            previousValue: null,
+            asOf: "2026-10-30T21:15:59Z",
+            asOfKind: "timestamp",
+            fetchedAt: "2026-10-31T00:00:00Z",
+            unit: "index",
+            currency: "USD",
+            source,
+            status: "delayed",
+            isDemo: false,
+            qualityFlags: ["index_quote_snapshot"],
+          },
+        ],
+        history: {
+          series: {
+            id,
+            nameZh: ndx ? "纳斯达克100指数" : "标普500指数",
+            frequency: "1d",
+            timezone: "America/New_York",
+            kind: "observation",
+          },
+          points: [
+            { time: "2025-09-15", value: ndx ? "28000" : "7600" },
+            { time: "2026-10-29", value: ndx ? "29000" : "7700" },
+          ],
+          source,
+          unit: "index",
+          isDemo: false,
+          status: "delayed",
+          asOf: "2026-10-29",
+        },
+      },
+    });
+  });
+  await page.goto("/dashboard");
+  for (const [id, value] of [
+    ["FRED_NASDAQ100", "28384.85"],
+    ["FRED_SP500", "7580.07"],
+  ]) {
+    await page.getByLabel("选择主图指标").selectOption(id);
+    await expect(page.getByTestId("chart-latest-point")).toHaveAttribute(
+      "data-value",
+      value,
+    );
+    const chart = page.locator(".focus-chart-section .price-chart");
+    await page.getByRole("button", { name: "ALL", exact: true }).click();
+    const allCount = Number(await chart.getAttribute("data-chart-points"));
+    await page.getByRole("button", { name: "1M", exact: true }).click();
+    await expect
+      .poll(async () => Number(await chart.getAttribute("data-chart-points")))
+      .toBeLessThan(allCount);
+    await expect(page.getByTestId("focus-price")).toContainText(
+      Number(value).toLocaleString("zh-CN", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }),
+    );
+    await page.getByRole("button", { name: "刷新数据", exact: true }).click();
+    await expect(page.getByTestId("chart-latest-point")).toHaveAttribute(
+      "data-value",
+      value,
+    );
+  }
 });
 test("mobile overview keeps the price, date and navigation accessible without horizontal overflow", async ({
   page,
