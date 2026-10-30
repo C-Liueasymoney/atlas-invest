@@ -10,8 +10,8 @@
 - [x] Write failing tests for Node-encrypted credentials, malformed/wrong keys, environment precedence, preview isolation, database replacement/deletion and explicit CLI skip behavior.
 - [x] Implement resolver using cryptography AESGCM; pin the dependency; update adapter and scheduled FRED invocation.
 - [x] Run full Python and Web checks, including isolated PostgreSQL integration; preserve unrelated deploy files.
-- [ ] Back up the live instance, deploy only changed files and dependency, preserve secrets and permissions; verify authenticated API-to-collector flow without sending test credentials upstream.
-- [ ] Verify private/public HTTPS and timer state, commit/push relevant changes, report remaining user step: entering the real Key.
+- [x] Back up the live instance, deploy only changed files and dependency, preserve secrets and permissions; verify authenticated API-to-collector flow without sending test credentials upstream.
+- [x] Verify private/public HTTPS and timer state, commit/push relevant changes, report remaining user step: entering the real Key.
 
 ## Review focus
 - Wrong master key or altered ciphertext must fail safely without plaintext in logs.

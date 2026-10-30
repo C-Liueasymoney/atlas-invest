@@ -118,5 +118,6 @@ M3 commit `802d295` — `feat(alerts): add persistent rules, validated imports a
 - Python 加密库固定 cryptography 50.0.2。可选任务 `--skip-unconfigured` 仅跳过缺失供应商凭据，缺数据库、缺指标注册、错误主密钥等仍失败；缺 Key 在消耗预算和请求上游前跳过。部署采集脚本新增两条美国指数，FRED 请求间隔13秒。
 - 本地验证：Python 33 项全部通过（真实临时 PostgreSQL，无跳过）；Web 67 项全部通过（真实临时 PostgreSQL，无跳过）；Playwright 8 条通过；lint、typecheck、格式和 production build 通过。独立审查发现的错误分类与临时部署脚本定时器恢复问题已修正。
 - 实例 i-uf6e1z4hkdc3u03591w2 / cn-shanghai 已确认 live、PostgreSQL、有效32字节加密主密钥、root:0600 环境文件；未保存任何真实 FRED Key。部署没有更换主密钥或修改既有市场数据；元数据 seed 补齐两条指数，无新增迁移。
-- 部署中：首次构建未完成并自动回退，确认网站与定时器恢复。第二次部署由独立 systemd 单元 atlas-credentials-release-r2 执行，日志 /var/log/atlas-credentials-release-r2.log；代码/旧构建备份 /var/backups/atlas-invest/credentials-release-20261030-r2，另有加密数据库备份。随后 Workbench 与公网连接超时，重新登录报 IncorrectStatus.CloudAssistantInvokeTimeout；备用 ECS RunCommand 返回 Forbidden.RAM，已请求补充最小运维权限。当前不能确认第二次部署及最终线上验证完成。
-- 待恢复通道后：检查部署任务、恢复网站和采集定时器，完成 deploy/verify-credential-flow.py 及公私网 HTTPS 验证，再更新本条状态。验证脚本不会覆盖已存在的真实 FRED Key，也不会向上游发送临时测试凭据。
+- 部署完成。过程中首次构建自动回退，第二次构建遇到实例全局 OOM，导致 Workbench 与公网暂时超时；原通道随后恢复，无需新增 RAM 权限。同实例“服务部署agent”聊天同时在修复看板 JSON 重复编码问题，最终构建恢复后，本次仅进行凭据和服务验证，未继续并发构建。第二次部署日志 /var/log/atlas-credentials-release-r2.log；代码/旧构建备份 /var/backups/atlas-invest/credentials-release-20261030-r2，另有加密数据库备份。保留这些回滚点。
+- 最终线上验证通过：deploy/verify-credential-flow.py 完整验证 owner API 保存、跨站拒绝、密文、Python读取、无密钥导出、替换与删除；测试 Key 已清理且没有向供应商发送。与定时器相同用户/EnvironmentFile 的 SP500 任务在无 Key 时返回 skipped、退出0。公私网 HTTPS、登录、安全 Cookie、受保护行情、看板/报价和退出均通过，atlas-web/PostgreSQL/Nginx/atlas-collect.timer 均已恢复运行。
+- 现在用户仅需登录 https://47.101.193.94/settings/data-sources，在 FRED 面板保存真实 Key、测试连接并同步指标；以后替换/删除通过网页完成，无需修改配置文件或重启。未持有真实供应商 Key，故不声称已验证 FRED 真实认证和取数。
