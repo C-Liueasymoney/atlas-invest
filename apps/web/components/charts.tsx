@@ -9,7 +9,6 @@ import {
   CrosshairMode,
   LineSeries,
   LineType,
-  type MouseEventParams,
   type Time,
 } from "lightweight-charts";
 import { ArrowUpRight, ChartNoAxesCombined } from "lucide-react";
@@ -204,9 +203,6 @@ export function ChartCanvas({
   useEffect(() => {
     if (!ref.current) return;
     const el = ref.current;
-    const mobileTouch = window.matchMedia(
-      "(max-width: 767px) and (pointer: coarse)",
-    );
     const style = getComputedStyle(document.documentElement);
     const chart = createChart(el, {
       autoSize: false,
@@ -329,9 +325,9 @@ export function ChartCanvas({
       }
     });
     sizeObserver.observe(el);
-    const showObservation = (param: MouseEventParams<Time>) => {
+    chart.subscribeCrosshairMove((param) => {
       if (!param.time) {
-        if (!mobileTouch.matches) setHover("");
+        setHover("");
         return;
       }
       const values = [...param.seriesData.values()].map((p) =>
@@ -344,22 +340,6 @@ export function ChartCanvas({
       setHover(
         `${typeof param.time === "string" ? param.time : ""}  ${values.join(" · ")}`,
       );
-    };
-    chart.subscribeCrosshairMove(showObservation);
-    chart.subscribeClick((param) => {
-      if (!mobileTouch.matches || !param.time) return;
-      for (const [series, point] of param.seriesData) {
-        const value =
-          "value" in point
-            ? point.value
-            : "close" in point
-              ? point.close
-              : undefined;
-        if (typeof value !== "number" || !Number.isFinite(value)) continue;
-        chart.setCrosshairPosition(value, param.time, series);
-        showObservation(param);
-        break;
-      }
     });
     const observer = new MutationObserver(() => {
       if (document.documentElement.dataset.colors) {
@@ -409,7 +389,7 @@ export function ChartCanvas({
               移动光标查看历史观测 · 滚轮缩放
             </span>
             <span className="chart-touch-hint">
-              轻点查看日期和数值 · 长按后拖动逐点查看 · 双指缩放
+              长按后拖动查看日期和数值 · 双指缩放
             </span>
           </>
         )}
