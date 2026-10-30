@@ -8,5 +8,5 @@ User-approved policy: prioritize newest official domestic quote whenever the use
 - [x] Test manual cache bypass, retained failure state, no historical rewrites and six concurrent PostgreSQL requests without nested connection acquisition.
 - [x] Run Web74, browser10, real source smoke, lint, typecheck and production build; preserve unrelated workspace edits.
 - [x] Document official provider application paths, unverified entitlements and lack of published applicable API prices.
-- [ ] Build in an isolated server directory with one worker and memory limits; smoke-test before changing production.
-- [ ] Switch with backup/rollback; verify authenticated manual refresh from public HTTPS; commit and push only related files.
+- [x] Build in an isolated server directory with one worker and memory limits; smoke-test before changing production.
+- [x] Switch with backup/rollback; verify authenticated manual refresh from public HTTPS; commit and push only related files.
