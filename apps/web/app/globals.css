@@ -3800,3 +3800,26 @@ dd {
   color: #eab308;
   fill: #eab308;
 }
+
+.chart-touch-hint {
+  display: none;
+}
+@media (max-width: 767px) and (pointer: coarse) {
+  .chart-desktop-hint {
+    display: none;
+  }
+  .chart-touch-hint {
+    display: inline;
+  }
+  .chart-hover,
+  .focus-chart-section .chart-hover {
+    position: static;
+    max-width: none;
+    min-height: 3em;
+    margin-bottom: 6px;
+    font-size: 11px;
+    line-height: 1.5;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
