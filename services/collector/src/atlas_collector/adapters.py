@@ -9,6 +9,7 @@ import sys
 from .errors import CollectorError
 from .http import JsonClient
 from .models import Bar, Observation, Quote
+from .credentials import credential, MissingProviderCredential
 
 SHANGHAI = ZoneInfo('Asia/Shanghai')
 
@@ -104,7 +105,7 @@ def normalize_sge_quote(payload, fetched_at):
         raise CollectorError('empty_response', 'No valid SGE quotation with source timestamp.')
     return max(candidates, key=lambda row: row.asof_at)
 
-def fetch(series, start, end, client=None):
+def fetch(series, start, end, client=None, credential_connection=None):
     client = client or JsonClient()
     provider, symbol = series['providerId'], series['providerSymbol']
     if provider == 'cftc':
@@ -113,9 +114,9 @@ def fetch(series, start, end, client=None):
         from .cftc import fetch_cftc
         return fetch_cftc(client,start,end)
     if provider == 'fred':
-        key = os.getenv('FRED_API_KEY')
+        key = credential('fred', credential_connection)
         if not key:
-            raise CollectorError('not_configured', 'Set FRED_API_KEY on the server.')
+            raise MissingProviderCredential()
         records, offset = [], 0
         while True:
             payload = client.get('https://api.stlouisfed.org/fred/series/observations', {'series_id': symbol, 'api_key': key, 'file_type': 'json', 'observation_start': start.isoformat(), 'observation_end': end.isoformat(), 'sort_order': 'asc', 'limit': 100000, 'offset': offset})

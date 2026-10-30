@@ -111,3 +111,12 @@ M3 commit `802d295` — `feat(alerts): add persistent rules, validated imports a
 - 两个指数加入默认自选、首页刷新和主图选择器；首页以“美国股票指数 / IDX / 日度观察”突出语义。无 Key 时保留入口并明确留空，不回退到 Demo 数值。
 - 共用服务端 `FRED_API_KEY`，无数据库迁移。当前本机没有 `.env`，真实 FRED 认证与取数需用户配置免费 Key 后完成。
 - 功能级测试覆盖 catalog、默认自选、刷新名单、主图筛选及指数文案。验证通过：格式、lint、strict typecheck、production build、Web 65 项、Python 18 项及 Playwright 8 条；本机未配置测试数据库，9 项 Python PostgreSQL 集成测试明确跳过。
+
+## 2026-10-30 — 网页凭据与定时采集共用数据库
+
+- 保留现有 owner 配置页面、API、数据库表及 AES-256-GCM 格式。新增 Python owner 隔离的 live 凭据读取，与 Node 密文互通；环境变量仍优先，preview/demo 不读凭据数据库。不缓存解密后的 Key，网页替换、删除在下次读取生效。
+- Python 加密库固定 cryptography 50.0.2。可选任务 `--skip-unconfigured` 仅跳过缺失供应商凭据，缺数据库、缺指标注册、错误主密钥等仍失败；缺 Key 在消耗预算和请求上游前跳过。部署采集脚本新增两条美国指数，FRED 请求间隔13秒。
+- 本地验证：Python 33 项全部通过（真实临时 PostgreSQL，无跳过）；Web 67 项全部通过（真实临时 PostgreSQL，无跳过）；Playwright 8 条通过；lint、typecheck、格式和 production build 通过。独立审查发现的错误分类与临时部署脚本定时器恢复问题已修正。
+- 实例 i-uf6e1z4hkdc3u03591w2 / cn-shanghai 已确认 live、PostgreSQL、有效32字节加密主密钥、root:0600 环境文件；未保存任何真实 FRED Key。部署没有更换主密钥或修改既有市场数据；元数据 seed 补齐两条指数，无新增迁移。
+- 部署中：首次构建未完成并自动回退，确认网站与定时器恢复。第二次部署由独立 systemd 单元 atlas-credentials-release-r2 执行，日志 /var/log/atlas-credentials-release-r2.log；代码/旧构建备份 /var/backups/atlas-invest/credentials-release-20261030-r2，另有加密数据库备份。随后 Workbench 与公网连接超时，重新登录报 IncorrectStatus.CloudAssistantInvokeTimeout；备用 ECS RunCommand 返回 Forbidden.RAM，已请求补充最小运维权限。当前不能确认第二次部署及最终线上验证完成。
+- 待恢复通道后：检查部署任务、恢复网站和采集定时器，完成 deploy/verify-credential-flow.py 及公私网 HTTPS 验证，再更新本条状态。验证脚本不会覆盖已存在的真实 FRED Key，也不会向上游发送临时测试凭据。

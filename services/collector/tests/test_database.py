@@ -9,6 +9,48 @@ from atlas_collector.store import Store
 from atlas_collector.models import Bar, Observation, Quote
 from atlas_collector.errors import CollectorError
 
+
+def test_database_credentials_follow_web_replacement_deletion_and_owner_scope(db, monkeypatch):
+    from atlas_collector.credentials import credential, OWNER_ID
+    from test_credentials import node_ciphertext
+    import base64
+    key = base64.b64encode(os.urandom(32)).decode()
+    monkeypatch.delenv('FRED_API_KEY', raising=False)
+    monkeypatch.setenv('CREDENTIAL_ENCRYPTION_KEY', key)
+    for owner, secret in [(str(uuid.uuid4()), 'other-owner-must-not-be-read'),
+                          (OWNER_ID, 'first-web-saved-key')]:
+        db.connection.execute('INSERT INTO provider_credentials(id,provider_id,owner_id,secret_ciphertext,secret_last4) VALUES(%s,%s,%s,%s,%s)',
+                              (uuid.uuid4(), 'fred', owner, node_ciphertext(secret, key), secret[-4:]))
+    assert credential('fred', db.connection) == 'first-web-saved-key'
+    db.connection.execute('UPDATE provider_credentials SET secret_ciphertext=%s WHERE owner_id=%s',
+                          (node_ciphertext('replacement-web-key', key), OWNER_ID))
+    assert credential('fred', db.connection) == 'replacement-web-key'
+    db.connection.execute('DELETE FROM provider_credentials WHERE owner_id=%s', (OWNER_ID,))
+    assert credential('fred', db.connection) is None
+
+
+def test_fred_adapter_uses_database_key_for_real_http_request(db, monkeypatch):
+    from atlas_collector.adapters import fetch
+    from atlas_collector.http import JsonClient
+    from atlas_collector.credentials import OWNER_ID
+    from test_credentials import node_ciphertext
+    from io import BytesIO
+    from urllib.parse import parse_qs, urlparse
+    import base64
+    key = base64.b64encode(os.urandom(32)).decode()
+    monkeypatch.delenv('FRED_API_KEY', raising=False)
+    monkeypatch.setenv('CREDENTIAL_ENCRYPTION_KEY', key)
+    db.connection.execute('INSERT INTO provider_credentials(id,provider_id,owner_id,secret_ciphertext,secret_last4) VALUES(%s,%s,%s,%s,%s)',
+                          (uuid.uuid4(), 'fred', OWNER_ID, node_ciphertext('db-only-test-key', key), '-key'))
+    def upstream(request, **kwargs):
+        assert parse_qs(urlparse(request.full_url).query)['api_key'] == ['db-only-test-key']
+        response = BytesIO(b'{"observations":[{"date":"2026-10-15","value":"123.45"}],"count":1}')
+        response.headers = {}
+        return response
+    rows = fetch({'providerId':'fred','providerSymbol':'SP500'}, date(2026,10,15), date(2026,10,15),
+                 JsonClient(opener=upstream), credential_connection=db.connection)
+    assert rows[0].value == Decimal('123.45')
+
 @pytest.fixture
 def db(monkeypatch):
     url = os.getenv('TEST_DATABASE_URL')

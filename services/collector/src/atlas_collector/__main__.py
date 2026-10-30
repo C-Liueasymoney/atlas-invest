@@ -10,6 +10,7 @@ import sys
 from .adapters import fetch
 from .errors import CollectorError
 from .http import JsonClient
+from .credentials import credential, MissingProviderCredential
 from .store import Store, live_only
 
 
@@ -28,6 +29,7 @@ def main(argv=None):
     parser.add_argument('--start', type=date.fromisoformat)
     parser.add_argument('--end', type=date.fromisoformat)
     parser.add_argument('--probe', action='store_true')
+    parser.add_argument('--skip-unconfigured', action='store_true', help='Skip an optional provider without credentials; other failures still fail.')
     args = parser.parse_args(argv)
     try:
         if not args.probe:
@@ -54,6 +56,8 @@ def main(argv=None):
         with psycopg.connect(os.environ['DATABASE_URL'], autocommit=True, connect_timeout=10) as connection:
             if not connection.execute('SELECT 1 FROM series WHERE id=%s', (series['id'],)).fetchone():
                 raise CollectorError('not_configured', 'Run database migrations and catalog seed first.')
+            if series['providerId'] == 'fred' and not credential('fred', connection):
+                raise MissingProviderCredential()
             # Incremental sync rechecks two calendar weeks (at least seven normal trading days).
             # Initial sync and backfill default to three years.
             if args.command == 'sync' and not args.start and series['kind'] != 'quote':
@@ -61,10 +65,13 @@ def main(argv=None):
                 latest = connection.execute(f'SELECT max({column}) FROM {table} WHERE series_id=%s', (series['id'],)).fetchone()[0]
                 if latest:
                     start = min(latest - timedelta(days=14), end)
-            result = Store(connection).run(series, args.command, lambda: fetch(series,start,end,client), cache_seconds=(lambda:max(30,client.cache_seconds)) if series['providerId']=='gold_api' else 0)
+            result = Store(connection).run(series, args.command, lambda: fetch(series,start,end,client,credential_connection=connection), cache_seconds=(lambda:max(30,client.cache_seconds)) if series['providerId']=='gold_api' else 0)
             print(json.dumps({'seriesId':series['id'],**result}))
         return 0
     except CollectorError as error:
+        if args.skip_unconfigured and isinstance(error, MissingProviderCredential):
+            print(json.dumps({'seriesId': args.series, 'status': 'skipped', 'code': error.code}))
+            return 0
         print(json.dumps({'code':error.code, 'message':str(error)}, ensure_ascii=False), file=sys.stderr)
         return 1
     except KeyboardInterrupt:

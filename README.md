@@ -25,6 +25,10 @@ npm run dev
 
 纳斯达克100指数和标普500指数使用 FRED 的官方日收盘序列 `NASDAQ100`、`SP500`。同一枚免费 Key 也可读取本项目中的美国利率、CPI 和美元指数。
 
+**已部署的 live 网站推荐直接网页配置：**登录后进入 `/settings/data-sources` → FRED →「编辑 / 设置凭据」→ 输入 Key 并确认保存 →「测试连接」→ 同步指标。Key 由服务端以 AES-256-GCM 加密存入 PostgreSQL，网页后端与 Python 定时采集共用；替换、删除后下一次读取生效，无需重启。服务器每30分钟采集一次，已纳入纳斯达克100和标普500。加密主密钥由服务器单独管理，不通过网页或 Git 传递。
+
+下面的环境变量方式适用于不连接数据库的本地 preview。环境变量优先于数据库；使用网页管理时，服务器不要再设置非空的 `FRED_API_KEY`。
+
 1. 登录 [FRED API Keys](https://fredaccount.stlouisfed.org/apikeys)，创建并复制一枚 Key。申请说明见 [FRED 官方文档](https://fred.stlouisfed.org/docs/api/api_key.html)。
 2. 仓库根目录还没有 `.env` 时先运行 `npm run setup:local`；已有时不要覆盖。
 3. 编辑根目录 `.env`，将 `FRED_API_KEY=` 改成 `FRED_API_KEY=你的Key`。不要把 Key 发到聊天、截图或提交到 Git。

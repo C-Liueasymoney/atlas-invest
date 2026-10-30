@@ -44,6 +44,8 @@ FRED `.` 转为 SQL NULL，不转为0。`realtime_start` 是实时查询区间�
 
 `FRED_NASDAQ100` 与 `FRED_SP500` 分别映射官方 `NASDAQ100`、`SP500` 日收盘观察值。它们不是 QQQ/SPY ETF、指数期货或盘中行情；看板按 FRED 发布的观察日显示。配置一枚 `FRED_API_KEY` 即可与利率、CPI、美元指数等序列共用。
 
+2026-10-30 起，live Python 采集也可直接使用网页保存的 FRED 加密数据库凭据，无需设置 `FRED_API_KEY`；设置环境变量时仍优先使用它。数据库读取按固定单 owner 隔离，Node/Python 共用 AES-256-GCM 格式，主密钥为服务端 `CREDENTIAL_ENCRYPTION_KEY`。preview/demo 不访问凭据数据库。`--skip-unconfigured` 仅供可选来源定时采集：缺 Key 明确跳过，其余失败保留非零退出码。
+
 ## 幂等、故障与缓存
 
 单 series 会话 advisory lock 覆盖拉取和写入；同一 series 并行作业返回 `already_running`。批次在 PostgreSQL 事务内 upsert；相同记录不更新采集时间、不制造修订；修改过的日线标记 `is_revised`。报价禁止较旧源时间覆盖较新报价。
