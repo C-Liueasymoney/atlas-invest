@@ -140,3 +140,13 @@ M3 commit `802d295` — `feat(alerts): add persistent rules, validated imports a
 - 本地验证：Web79项通过、2项外网可选测试跳过；单独开启指数外网测试通过；Playwright11条通过，覆盖黄金/指数刷新和折线一致、范围切换。lint、strict typecheck、格式、production build通过。
 - 服务器部署在独立目录构建并保留旧.next及源文件；服务切换前进行临时进程报价验证。生产验证与Git推送结果见本次交付记录。无密钥或数据库资料提交。
 - 回滚：恢复备份.next及源文件即可，新增provider行可保留；缓存不覆盖规范化日收盘历史。
+
+本轮功能提交 `932d803` — `feat(market): sync latest quotes with charts and refresh US indexes` 已正常推送至 `origin/codex/atlas-v1`（https://github.com/C-Liueasymoney/atlas-invest）。
+
+ECS临时生产进程及正式切换后验证均通过；公网浏览器实际点击三个指标刷新，验证主报价与折线最新点一致：Au99.99 833.00（2026-10-31）、NDX 28384.85（2026-10-30T21:15:59Z）、SP500 7580.07（2026-10-30T20:47:43Z）。指数接口本次各返回321条日线（供应商count参数320含当期额外行），默认1Y图显示252点。手机390px截图也已检查。
+
+首次独立构建因服务器缺少既有 `useRemote.setData` 返回值而未通过类型检查；只在临时目录补齐对应一行，重新构建成功后才切换。保留服务器原有其他修复。生产源文件SHA256与本地charts/latest-index一致。回滚产物：`/opt/atlas-deploy-staging/latest-market-previous-20261031`；构建日志：`/var/log/atlas-latest-market-rebuild.log`。公网完整会话验证通过，atlas-web、PostgreSQL、Nginx、atlas-collect.timer均active。
+
+其他指标核查：XAUUSD采集时间2026-10-31；人民币汇率和黄金历史日线2026-10-30；利率/联邦基金利率观察2026-10-29；CPI2026-09；CFTC2026-10-27；美元指数历史停留2026-10-23，需要保留陈旧状态，不将采集时间冒充观察日期。
+
+手机复查补充：密集验收触发本地5次/分钟预算时，Yahoo默认停用曾掩盖主源限额原因。已改为备源失败后保留主源原始原因；新回归测试在旧代码失败、修复后通过，相关6项测试通过，1项外网测试按默认跳过；typecheck通过。历史范围说明改为“约320条”以覆盖供应商包含当期额外行的返回。

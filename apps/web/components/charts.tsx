@@ -168,7 +168,7 @@ export function PriceChart({
         <div className="chart-provenance">
           {history && (
             <p>
-              历史范围以来源当前可提供的日线为限（最多320条）；最新报价点单独展示。
+              历史范围以来源当前可提供的近期日线为限（约320条）；最新报价点单独展示。
             </p>
           )}
           {latestQuote && !latestQuote.isDemo && latestQuote.value != null && (

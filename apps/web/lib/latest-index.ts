@@ -257,7 +257,7 @@ export async function latestIndex(
         async () => ({ value: await tencentIndex(id) }),
         force,
       );
-    } catch {
+    } catch (primaryError) {
       raw = await controlled(
         "yahoo",
         "index-chart:" + symbol,
@@ -275,7 +275,9 @@ export async function latestIndex(
           return { value: parseIndexChart(await r.json(), id) };
         },
         force,
-      );
+      ).catch(() => {
+        throw primaryError;
+      });
     }
     const result: IndexResult = typeof raw === "string" ? JSON.parse(raw) : raw;
     if (!result.history.points.length) result.history = await seriesData(id);
