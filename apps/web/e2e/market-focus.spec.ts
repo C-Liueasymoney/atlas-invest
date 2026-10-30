@@ -3,7 +3,7 @@ test("overview puts the actual source quote before the large chart and isolates 
   page,
   request,
 }) => {
-  const response = await request.get("/api/v1/quotes?seriesIds=SGE_AU9999_D1");
+  const response = await request.get("/api/v1/market/domestic-quote");
   expect(response.ok()).toBeTruthy();
   const { items } = await response.json();
   const quote = items[0];
@@ -53,6 +53,49 @@ test("overview puts the actual source quote before the large chart and isolates 
     page.getByRole("button", { name: "添加组件", exact: true }),
   ).toBeVisible();
   await page.getByRole("tab", { name: "总览", exact: true }).click();
+  await expect(page.locator(".focus-chart-section")).toBeVisible();
+});
+test("manual gold refresh updates the main price from the latest quote independently of daily history", async ({
+  page,
+}) => {
+  await page.route("**/api/v1/session", (route) =>
+    route.fulfill({
+      json: { mode: "preview", authenticated: true, localDemo: true },
+    }),
+  );
+  let value = "854.76";
+  await page.route("**/api/v1/market/domestic-quote", async (route) => {
+    if (route.request().method() === "POST") value = "833.00";
+    await route.fulfill({
+      json: {
+        items: [
+          {
+            seriesId: "SGE_AU9999_D1",
+            value,
+            previousValue: "854.76",
+            unit: "CNY/g",
+            currency: "CNY",
+            isDemo: false,
+            status: "delayed",
+            asOf: "2026-10-31",
+            asOfKind: "date",
+            fetchedAt: "2026-10-31T00:00:00Z",
+            source: {
+              id: "akshare_sge",
+              label: "上海黄金交易所 · 延时行情",
+              url: "https://www.sge.com.cn/sjzx/yshqbg",
+            },
+            qualityFlags: ["official_delayed_snapshot"],
+          },
+        ],
+      },
+    });
+  });
+  await page.goto("/dashboard");
+  await expect(page.getByTestId("focus-price")).toContainText("854.76");
+  await page.getByRole("button", { name: "刷新数据", exact: true }).click();
+  await expect(page.getByTestId("focus-price")).toContainText("833.00");
+  await expect(page.locator(".symbol-caption")).toContainText("最新延时行情");
   await expect(page.locator(".focus-chart-section")).toBeVisible();
 });
 test("mobile overview keeps the price, date and navigation accessible without horizontal overflow", async ({

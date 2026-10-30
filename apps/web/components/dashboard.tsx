@@ -103,8 +103,23 @@ export function DashboardPage() {
   const [refreshVersion, setRefreshVersion] = useState(0);
   const focusSeries = catalog.data?.items.find((s) => s.id === focus);
   const focusQuote = useRemote<{ items: Quote[] }>(
-    `/api/v1/quotes?seriesIds=${focus}`,
+    focus === "SGE_AU9999_D1"
+      ? "/api/v1/market/domestic-quote"
+      : `/api/v1/quotes?seriesIds=${focus}`,
   );
+  const refreshFocusQuote = focusQuote.refresh;
+  useEffect(() => {
+    if (focus !== "SGE_AU9999_D1") return;
+    const check = () => {
+      if (document.visibilityState === "visible") refreshFocusQuote();
+    };
+    const timer = window.setInterval(check, 5 * 60 * 1000);
+    document.addEventListener("visibilitychange", check);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", check);
+    };
+  }, [focus, refreshFocusQuote]);
   const [draft, setDraft] = useState<Widget[] | null>(null);
   const [editing, setEditing] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -185,9 +200,11 @@ export function DashboardPage() {
                 onClick={() =>
                   refreshAction.run(async () => {
                     const result = await api<{ message?: string }>(
-                      session.data?.mode === "preview"
-                        ? "/api/v1/market/refresh"
-                        : `/api/providers/${focusSeries?.providerId}/sync`,
+                      focus === "SGE_AU9999_D1"
+                        ? "/api/v1/market/domestic-quote"
+                        : session.data?.mode === "preview"
+                          ? "/api/v1/market/refresh"
+                          : `/api/providers/${focusSeries?.providerId}/sync`,
                       json(
                         "POST",
                         session.data?.mode === "preview"

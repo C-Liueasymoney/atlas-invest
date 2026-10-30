@@ -65,11 +65,12 @@ export class ProviderController {
     key: string,
     budget: Budget,
     load: () => Promise<{ value: T; maxAgeSeconds?: number }>,
+    force = false,
   ): Promise<T> {
     const result = await this.store.exclusive(provider, async (store) => {
       const now = this.clock(),
         cached = await store.get(provider + ":" + key);
-      if (cached && cached.expires > now) {
+      if (!force && cached && cached.expires > now) {
         await store.record(provider, { at: now, cacheHit: true });
         return { value: cached.value as T };
       }
@@ -208,10 +209,11 @@ export async function controlled<T>(
   id: string,
   key: string,
   load: () => Promise<{ value: T; maxAgeSeconds?: number }>,
+  force = false,
 ) {
   const p = await providerConfig(id);
   if (!p.enabled) throw new AppError("SOURCE_UNAVAILABLE", "数据源已停用", 503);
   return new ProviderController(
     demoMode() ? mem : new PostgresControllerStore(),
-  ).execute(id, key, p.config, load);
+  ).execute(id, key, p.config, load, force);
 }

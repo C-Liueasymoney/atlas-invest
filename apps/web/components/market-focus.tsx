@@ -106,7 +106,11 @@ export function MarketHero({
             <span>·</span>
             <span>{marketDescription(series)}</span>
             <span>·</span>
-            <span>{frequencyDescription(series)}</span>
+            <span>
+              {quote?.qualityFlags?.includes("official_delayed_snapshot")
+                ? "最新延时行情 · CNY/g"
+                : frequencyDescription(series)}
+            </span>
           </div>
         </div>
         {actions && <div className="hero-actions">{actions}</div>}
@@ -183,6 +187,12 @@ export function MarketHero({
       {quote?.message && !demo && (
         <p className="focus-message">{quote.message}</p>
       )}
+      {quote?.qualityFlags?.includes("official_delayed_snapshot") &&
+        quote.fetchedAt && (
+          <p className="focus-message">
+            最近核对 {dateTime(quote.fetchedAt)} · 历史图表展示日线收盘
+          </p>
+        )}
     </section>
   );
 }

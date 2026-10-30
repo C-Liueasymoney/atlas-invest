@@ -1,4 +1,5 @@
 import { previewMode, refreshPreview } from "./market-preview";
+import { latestDomesticGold } from "./latest-gold";
 import {
   authorize,
   assertRuntime,
@@ -86,6 +87,14 @@ export async function dispatch(
       });
     }
     authorize(request);
+    if (
+      p[0] === "market" &&
+      p[1] === "domestic-quote" &&
+      ["GET", "POST"].includes(method)
+    ) {
+      const item = await latestDomesticGold(method === "POST");
+      return json({ items: [item], message: item.message });
+    }
     if (p[0] === "market" && p[1] === "refresh" && method === "POST")
       return json(await refreshPreview());
     const managed = await providerApi(request, p, url);
