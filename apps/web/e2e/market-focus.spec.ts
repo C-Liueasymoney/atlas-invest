@@ -1,4 +1,25 @@
 import { expect, test } from "@playwright/test";
+test.beforeEach(async ({ page }) => {
+  await page.route("**/api/v1/watchlists", (r) =>
+    r.fulfill({
+      json: {
+        items: [
+          {
+            id: "market-test",
+            items: [
+              "SGE_AU9999_D1",
+              "XAUUSD_QUOTE",
+              "FX_USDCNY_D1",
+              "FRED_DFII10",
+              "FRED_NASDAQ100",
+              "FRED_SP500",
+            ],
+          },
+        ],
+      },
+    }),
+  );
+});
 test("overview puts the actual source quote before the large chart and isolates research controls", async ({
   page,
   request,

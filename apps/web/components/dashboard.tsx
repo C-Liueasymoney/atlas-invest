@@ -31,11 +31,8 @@ import {
 import { IndicatorTable, MetricWidget, SourceHealth } from "./market";
 import { PriceChart } from "./charts";
 import { CompareChart } from "./compare";
-import {
-  isDashboardFocusSeries,
-  MarketHero,
-  RelatedMarkets,
-} from "./market-focus";
+import { MarketHero } from "./market-focus";
+import { RelatedPanel } from "./related-panel";
 type Dashboard = {
   id: string;
   name: string;
@@ -75,28 +72,30 @@ export const defaultWidgets: Widget[] = [
 export function DashboardPage() {
   const remote = useRemote<{ items: Dashboard[] }>("/api/v1/dashboards");
   const catalog = useRemote<{ items: Series[] }>("/api/v1/catalog");
-  const series = [
-    "SGE_AU9999_D1",
-    "XAUUSD_QUOTE",
-    "FX_USDCNY_D1",
-    "FRED_DFII10",
-    "FRED_DGS10",
-    "FRED_DTWEXBGS",
-    "FRED_NASDAQ100",
-    "FRED_SP500",
-  ]
+  const favorites = useRemote<{ items: { id: string; items: string[] }[] }>(
+    "/api/v1/watchlists",
+  );
+  const favoritesIds = favorites.data?.items[0]?.items || [];
+  const available = favoritesIds
     .map((id) => catalog.data?.items.find((s) => s.id === id))
     .filter((s): s is Series => !!s);
-  const quotes = useRemote<{ items: Quote[] }>(
-    series.length
-      ? `/api/v1/quotes?seriesIds=${series.map((s) => s.id).join(",")}`
-      : null,
-  );
+  const quotes = useRemote<{ items: Quote[] }>(null);
   const dashboard = remote.data?.items[0];
   const session = useRemote<{ mode: "preview" | "live" | "demo" }>(
     "/api/v1/session",
   );
-  const [focus, setFocus] = useState("SGE_AU9999_D1");
+  const [preferredFocus, setFocus] = useState(() => {
+    try {
+      return typeof window !== "undefined"
+        ? localStorage.getItem("atlas-overview-focus") || "SGE_AU9999_D1"
+        : "SGE_AU9999_D1";
+    } catch {
+      return "SGE_AU9999_D1";
+    }
+  });
+  const focus = available.some((s) => s.id === preferredFocus)
+    ? preferredFocus
+    : available[0]?.id || "";
   const [view, setView] = useState<"overview" | "research">("overview");
   const refreshAction = useAction();
   const [refreshMessage, setRefreshMessage] = useState("");
@@ -107,11 +106,13 @@ export function DashboardPage() {
     items: Quote[];
     history?: import("./api").Envelope;
   }>(
-    focus === "SGE_AU9999_D1"
-      ? "/api/v1/market/domestic-quote"
-      : isIndex
-        ? `/api/v1/market/index-quote?seriesId=${focus}`
-        : `/api/v1/quotes?seriesIds=${focus}`,
+    !focus
+      ? null
+      : focus === "SGE_AU9999_D1"
+        ? "/api/v1/market/domestic-quote"
+        : isIndex
+          ? `/api/v1/market/index-quote?seriesId=${focus}`
+          : `/api/v1/quotes?seriesIds=${focus}`,
   );
   const refreshFocusQuote = focusQuote.refresh;
   useEffect(() => {
@@ -176,83 +177,107 @@ export function DashboardPage() {
         <Link href="/indicators">市场</Link>
         <span>›</span>
         <span>黄金、指数与宏观</span>
-        <select
-          aria-label="选择主图指标"
-          value={focus}
-          onChange={(e) => setFocus(e.target.value)}
-        >
-          {catalog.data?.items.filter(isDashboardFocusSeries).map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.nameZh}
-            </option>
-          ))}
-        </select>
+        <div className="focus-switcher">
+          <label htmlFor="focus-series">
+            ★ 切换主图 <small>{available.length} 个自选</small>
+          </label>
+          <select
+            id="focus-series"
+            disabled={!available.length}
+            aria-label="选择主图指标"
+            value={focus}
+            onChange={(e) => {
+              setFocus(e.target.value);
+              try {
+                localStorage.setItem("atlas-overview-focus", e.target.value);
+              } catch {}
+            }}
+          >
+            {!available.length && <option value="">暂无自选指标</option>}
+            {available.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.nameZh}
+              </option>
+            ))}
+          </select>
+          <Link href="/watchlists">管理自选 ↗</Link>
+        </div>
       </div>
       <ErrorNotice
-        message={catalog.error || focusQuote.error}
+        message={catalog.error || favorites.error || focusQuote.error}
         retry={() => {
           catalog.refresh();
+          favorites.refresh();
           focusQuote.refresh();
         }}
       />
-      <MarketHero
-        series={focusSeries}
-        quote={focusQuote.data?.items.find((q) => q.seriesId === focus)}
-        actions={
-          <>
-            {session.data && session.data.mode !== "demo" && (
-              <button
-                disabled={refreshAction.busy || !focusSeries}
-                onClick={() =>
-                  refreshAction.run(async () => {
-                    const result = await api<{
-                      message?: string;
-                      items?: Quote[];
-                      history?: import("./api").Envelope;
-                    }>(
-                      focus === "SGE_AU9999_D1"
-                        ? "/api/v1/market/domestic-quote"
-                        : isIndex
-                          ? `/api/v1/market/index-quote?seriesId=${focus}`
-                          : session.data?.mode === "preview"
-                            ? "/api/v1/market/refresh"
-                            : `/api/providers/${focusSeries?.providerId}/sync`,
-                      json(
-                        "POST",
-                        session.data?.mode === "preview"
-                          ? {}
-                          : { seriesId: focus },
-                      ),
-                    );
-                    if (result.items)
-                      focusQuote.setData({
-                        items: result.items,
-                        history: result.history,
-                      });
-                    else focusQuote.refresh();
-                    quotes.refresh();
-                    setRefreshVersion((v) => v + 1);
-                    setRefreshMessage(
-                      result.message || "采集完成，以来源公布日期为准",
-                    );
-                    return result;
-                  }, "")
-                }
-              >
-                {refreshAction.busy ? "正在采集…" : "刷新数据"}
-              </button>
-            )}
-            <Link className="button subtle" href={`/indicators/${focus}`}>
-              指标详情 <ArrowUpRight size={14} />
-            </Link>
-          </>
-        }
-      />
-      <ActionFeedback action={refreshAction} />
-      {refreshMessage && (
-        <p role="status" className="refresh-result">
-          {refreshMessage}
-        </p>
+      {!focus && !favorites.loading && (
+        <Empty>
+          还没有自选指标。<Link href="/indicators">去收藏指标</Link>
+        </Empty>
+      )}
+      {focus && (
+        <>
+          <MarketHero
+            series={focusSeries}
+            quote={focusQuote.data?.items.find((q) => q.seriesId === focus)}
+            actions={
+              <>
+                {session.data && session.data.mode !== "demo" && (
+                  <button
+                    disabled={refreshAction.busy || !focusSeries}
+                    onClick={() =>
+                      refreshAction.run(async () => {
+                        const result = await api<{
+                          message?: string;
+                          items?: Quote[];
+                          history?: import("./api").Envelope;
+                        }>(
+                          focus === "SGE_AU9999_D1"
+                            ? "/api/v1/market/domestic-quote"
+                            : isIndex
+                              ? `/api/v1/market/index-quote?seriesId=${focus}`
+                              : session.data?.mode === "preview"
+                                ? "/api/v1/market/refresh"
+                                : `/api/providers/${focusSeries?.providerId}/sync`,
+                          json(
+                            "POST",
+                            session.data?.mode === "preview"
+                              ? {}
+                              : { seriesId: focus },
+                          ),
+                        );
+                        if (result.items)
+                          focusQuote.setData({
+                            items: result.items,
+                            history: result.history,
+                          });
+                        else focusQuote.refresh();
+                        quotes.refresh();
+                        setRefreshVersion((v) => v + 1);
+                        setRefreshMessage(
+                          result.message || "采集完成，以来源公布日期为准",
+                        );
+                        return result;
+                      }, "")
+                    }
+                  >
+                    {refreshAction.busy ? "正在采集…" : "刷新数据"}
+                  </button>
+                )}
+                <Link className="button subtle" href={`/indicators/${focus}`}>
+                  指标详情 <ArrowUpRight size={14} />
+                </Link>
+              </>
+            }
+          />
+          <ActionFeedback action={refreshAction} />
+          {refreshMessage && (
+            <p role="status" className="refresh-result">
+              {refreshMessage}
+            </p>
+          )}
+        </>
       )}
       <div className="focus-tabs" role="tablist" aria-label="行情内容">
         <button
@@ -276,28 +301,32 @@ export function DashboardPage() {
         </Link>
       </div>
       {view === "overview" ? (
-        <div className="focus-market-layout">
-          <section className="focus-chart-section" aria-label="主要价格图表">
-            <PriceChart
-              key={`${focus}-${refreshVersion}`}
-              seriesId={focus}
-              range="1Y"
-              chartType="line"
-              latestQuote={focusQuote.data?.items.find(
-                (q) => q.seriesId === focus,
-              )}
-              history={
-                focusQuote.data?.history?.series.id === focus
-                  ? focusQuote.data.history
-                  : undefined
-              }
+        focus && (
+          <div className="focus-market-layout">
+            <section className="focus-chart-section" aria-label="主要价格图表">
+              <PriceChart
+                key={`${focus}-${refreshVersion}`}
+                seriesId={focus}
+                range="1Y"
+                chartType="line"
+                latestQuote={focusQuote.data?.items.find(
+                  (q) => q.seriesId === focus,
+                )}
+                history={
+                  focusQuote.data?.history?.series.id === focus
+                    ? focusQuote.data.history
+                    : undefined
+                }
+              />
+            </section>
+            <RelatedPanel
+              key={focus}
+              focus={focus}
+              catalog={catalog.data?.items || []}
+              version={refreshVersion}
             />
-          </section>
-          <RelatedMarkets
-            series={series.filter((s) => s.id !== focus)}
-            quotes={quotes.data?.items || []}
-          />
-        </div>
+          </div>
+        )
       ) : (
         <>
           <div className="research-layout-heading">

@@ -20,6 +20,7 @@ import { providerApi } from "./api-providers";
 import { evaluateAlerts } from "./alerts";
 import { alertsApi } from "./api-alerts";
 import { workspaceApi } from "./api-workspace";
+import { relatedApi } from "./api-related";
 const loginAttempts: number[] = [];
 export async function dispatch(
   request: Request,
@@ -88,6 +89,8 @@ export async function dispatch(
       });
     }
     authorize(request);
+    const related = await relatedApi(request, p);
+    if (related) return related;
     if (
       p[0] === "market" &&
       p[1] === "index-quote" &&

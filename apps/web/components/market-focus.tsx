@@ -201,17 +201,23 @@ export function MarketHero({
 export function RelatedMarkets({
   series,
   quotes,
+  onManage,
 }: {
   series: Series[];
   quotes: Quote[];
+  onManage?: () => void;
 }) {
   return (
     <aside className="related-markets">
       <div className="related-heading">
         <h2>相关指标</h2>
-        <Link href="/watchlists">
-          自选 <ChevronRight size={13} />
-        </Link>
+        {onManage ? (
+          <button onClick={onManage}>管理关联</button>
+        ) : (
+          <Link href="/watchlists">
+            自选 <ChevronRight size={13} />
+          </Link>
+        )}
       </div>
       {series.map((s) => {
         const quote = quotes.find((q) => q.seriesId === s.id);

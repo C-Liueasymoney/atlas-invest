@@ -3823,3 +3823,77 @@ dd {
     overflow-wrap: anywhere;
   }
 }
+
+/* Market overview: a visible favorites-backed chart switcher. */
+.focus-switcher {
+  margin-left: auto;
+  padding: 12px 16px;
+  border: 1px solid var(--border, #dce3ee);
+  border-radius: 12px;
+  background: var(--surface, #f5f8ff);
+  min-width: 280px;
+  display: grid;
+  gap: 8px;
+}
+.focus-switcher label {
+  font-weight: 650;
+  color: var(--text);
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+.focus-switcher small {
+  font-weight: 400;
+  color: var(--muted);
+}
+.focus-switcher select {
+  width: 100%;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 10px;
+  border: 1px solid #91adf7;
+  border-radius: 7px;
+  background: var(--bg);
+  color: var(--text);
+}
+.focus-switcher a {
+  font-size: 12px;
+  color: #2962ff;
+  justify-self: end;
+}
+.related-panel {
+  min-width: 0;
+}
+.related-picker {
+  max-height: 48vh;
+  overflow-y: auto;
+  margin: 16px 0;
+}
+.related-picker label {
+  padding: 10px 0;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+}
+.related-picker input {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.related-picker small {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+@media (max-width: 680px) {
+  .focus-switcher {
+    width: 100%;
+    min-width: 0;
+    margin: 12px 0 0;
+  }
+  .market-breadcrumb {
+    flex-wrap: wrap;
+  }
+}
