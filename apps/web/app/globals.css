@@ -3862,6 +3862,7 @@ dd {
   justify-self: end;
 }
 .related-panel {
+  width: 100%;
   min-width: 0;
 }
 .related-picker {

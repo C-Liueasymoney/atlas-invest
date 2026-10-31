@@ -42,6 +42,12 @@ test("favorites gate the main chart while related picks can use the full catalog
   await expect(
     page.getByText("尚未添加关联指标", { exact: false }),
   ).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect
+    .poll(async () =>
+      Math.round((await page.locator(".related-panel").boundingBox())!.width),
+    )
+    .toBeGreaterThan(330);
   favorites = [];
   await page.reload();
   await expect(

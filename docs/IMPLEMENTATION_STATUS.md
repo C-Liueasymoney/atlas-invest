@@ -158,3 +158,9 @@ ECS临时生产进程及正式切换后验证均通过；公网浏览器实际�
 - 新增受原有鉴权与同源保护的GET/PUT /api/v1/market/related/:seriesId；migration0003新增market_related_preferences(owner_id,series_id,related_ids)，不修改已有行情或工作区表。live使用PostgreSQL、preview/demo各自独立私有文件；服务器保存配置支持跨设备读取。
 - API验证空列表持久化、主图隔离、自关联/重复/无效指标拒绝；真实PostgreSQL验证JSON数组形状。Web82项通过，2项外网可选测试跳过；12条浏览器流程通过。审查发现空收藏误隐藏研究看板的问题已修正并加入回归，同时加入主图重载记忆验证。
 - 增量迁移仅加表，回滚代码可保留表与用户配置；生产使用独立构建与旧产物备份，部署验证见交付结果。未提交其他聊天尚未提交的workspace修复及部署文件。
+
+功能提交1b13789已推送origin/codex/atlas-v1。ECS已完成新增表迁移及首轮激活，黄金/NDX/SP500配置读取通过；公网实际验证配置保存、读回、清空，测试配置已清理。通用迁移运行器在该实例报08P01 invalid message format，故使用管理员事务执行0003并将表归属atlas、登记迁移；未扩大应用权限。运行时配置API读写均成功。旧产物备份overview-previous-20261031，后续手机宽度修正备份overview-width-previous-20261031。
+
+手机复查修正了新增related-panel在flex布局中未铺满宽度的细节；新增宽度回归通过。关联配置管理、收藏筛选与最新行情功能的最终公网验证见交付结果。
+
+最终生产验证完成：公网当前8个收藏与8个主图选项一致，黄金/NDX/SP500三个管理面板均可选择其余16个目录指标（总17项），关联配置真实保存/读取/清空通过，测试配置已删除恢复默认；手机390px关联区域铺满且无横向溢出、关联报价可显示。完整公网会话验证通过，atlas-web/PostgreSQL/Nginx/采集定时器均active。新构建日志/var/log/atlas-overview-width-build.log，旧版本保留在/opt/atlas-deploy-staging/overview-width-previous-20261031。
