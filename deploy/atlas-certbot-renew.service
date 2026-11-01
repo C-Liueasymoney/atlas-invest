@@ -1,0 +1,8 @@
+[Unit]
+Description=Renew Atlas Invest public IP certificate
+Wants=network-online.target
+After=network-online.target atlas-network-compat.service nginx.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/atlas-certbot/bin/certbot renew --quiet --deploy-hook /usr/local/sbin/atlas-reload-nginx

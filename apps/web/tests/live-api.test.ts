@@ -62,6 +62,22 @@ it.runIf(!!process.env.TEST_DATABASE_URL)(
         name: "stolen",
       });
       expect(patch.status).toBe(404);
+      const ownDashboard = randomUUID();
+      await db`INSERT INTO dashboards(id,owner_id,name) VALUES(${ownDashboard},'00000000-0000-4000-8000-000000000001','round-trip regression')`;
+      await db`INSERT INTO dashboard_widgets(id,dashboard_id,type,config,layout_desktop) VALUES(${randomUUID()},${ownDashboard},'price-chart',${db.json({ seriesId: "FRED_DFII10", chartType: "line", range: "1Y" })},${db.json({ x: 0, y: 0, w: 8, h: 5 })})`;
+      for (let round = 0; round < 3; round++) {
+        const response = await call("v1/dashboards");
+        expect(response.status).toBe(200);
+        const dashboard = (await response.json()).items[0];
+        expect(typeof dashboard.widgets[0].config).toBe("object");
+        expect(typeof dashboard.widgets[0].layout).toBe("object");
+        expect((await call("v1/quotes?seriesIds=FRED_DFII10")).status).toBe(
+          200,
+        );
+      }
+      const [jsonTypes] =
+        await db`SELECT bool_and(jsonb_typeof(config)='object' AND jsonb_typeof(layout_desktop)='object') AS valid FROM dashboard_widgets`;
+      expect(jsonTypes.valid).toBe(true);
       const nullData = await (
         await call(
           "v1/series/FRED_DFII10/observations?from=2026-01-01&to=2026-01-02",

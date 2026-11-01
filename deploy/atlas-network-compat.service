@@ -1,0 +1,8 @@
+[Unit]
+Description=Preserve Alibaba Cloud service connectivity alongside Tailscale
+Wants=network-online.target
+After=network-online.target tailscaled.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh /opt/atlas-invest/deploy/aliyun-network-compat.sh

@@ -1,0 +1,17 @@
+[Unit]
+Description=Atlas market data collection
+After=atlas-web.service network-online.target postgresql.service
+[Service]
+Type=oneshot
+User=atlas
+Group=atlas
+StateDirectory=atlas-invest
+StateDirectoryMode=0700
+EnvironmentFile=/opt/atlas-invest/deploy/.env
+ExecStart=/bin/sh /opt/atlas-invest/deploy/collect.sh
+TimeoutStartSec=25min
+MemoryMax=700M
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true

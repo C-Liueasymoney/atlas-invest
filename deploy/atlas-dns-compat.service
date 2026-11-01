@@ -1,0 +1,10 @@
+[Unit]
+Description=Allow established AliDNS replies alongside Tailscale
+After=tailscaled.service
+Before=atlas-web.service atlas-collect.service
+[Service]
+Type=oneshot
+ExecStart=/bin/sh /opt/atlas-invest/deploy/aliyun-dns-compat.sh
+RemainAfterExit=yes
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,21 @@
+[Unit]
+Description=Atlas Invest private web application
+After=network-online.target postgresql.service
+[Service]
+Type=simple
+User=atlas
+Group=atlas
+WorkingDirectory=/opt/atlas-invest
+EnvironmentFile=/opt/atlas-invest/deploy/.env
+ExecStart=/usr/bin/node scripts/web.mjs start
+Restart=on-failure
+RestartSec=5
+MemoryMax=768M
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/opt/atlas-invest/apps/web/.next
+ProtectHome=true
+UMask=0077
+[Install]
+WantedBy=multi-user.target

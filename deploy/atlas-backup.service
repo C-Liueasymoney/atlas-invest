@@ -1,0 +1,7 @@
+[Unit]
+Description=Atlas encrypted database backup
+After=postgresql.service
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /opt/atlas-invest/deploy/backup.sh
+TimeoutStartSec=10min

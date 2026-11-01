@@ -100,8 +100,12 @@ export async function workspace<T>(
   return database().begin(async (tx) => {
     const q = async <T extends object = Record<string, unknown>>(
       text: string,
-      p: (string | number | boolean | null)[] = [],
+      p: (string | number | boolean | null | ReturnType<typeof tx.json>)[] = [],
     ): Promise<T[]> => [...(await tx.unsafe<T[]>(text, p))];
+    // Let the driver serialize JSON once; stringifying first stores JSON strings
+    // that gain another encoding layer on every workspace update.
+    const jsonParam = (value: unknown) =>
+      tx.json(value as Parameters<typeof tx.json>[0]);
     // Serialize updates across web workers. Only a single local owner is supported in V1.
     await q("SELECT pg_advisory_xact_lock(8812001)");
     const ds = await q<{ id: string; name: string; layout_version: number }>(
@@ -234,8 +238,8 @@ export async function workspace<T>(
               d.id,
               w.type,
               w.title ?? null,
-              JSON.stringify(w.config),
-              JSON.stringify(w.layout),
+              jsonParam(w.config),
+              jsonParam(w.layout),
             ],
           );
       }
@@ -264,10 +268,10 @@ export async function workspace<T>(
             OWNER_ID,
             a.seriesId,
             a.conditionType,
-            JSON.stringify(a.params),
+            jsonParam(a.params),
             a.enabled,
             a.cooldownSeconds,
-            JSON.stringify(a.state),
+            jsonParam(a.state),
             a.lastFiredAt ?? null,
             a.lastEvaluatedAt ?? null,
           ],
@@ -299,8 +303,8 @@ export async function workspace<T>(
             OWNER_ID,
             n.title,
             n.markdown,
-            JSON.stringify(n.tags),
-            JSON.stringify(n.seriesIds),
+            jsonParam(n.tags),
+            jsonParam(n.seriesIds),
             n.eventDate ?? null,
             n.updatedAt,
           ],

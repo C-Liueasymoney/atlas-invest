@@ -1,0 +1,11 @@
+[Unit]
+Description=Reconcile Alibaba Cloud network exceptions after Tailscale updates
+
+[Timer]
+OnBootSec=20s
+OnUnitActiveSec=60s
+AccuracySec=5s
+Unit=atlas-network-compat.service
+
+[Install]
+WantedBy=timers.target
