@@ -197,3 +197,9 @@ ECS临时生产进程及正式切换后验证均通过；公网浏览器实际�
 Phase1提交867f7de、Phase2提交4585a91已分别成功推送origin/codex/atlas-v1。Phase3提交d329ee0首次推送HTTP/2 framing error，HTTP/1.1重试连接github.com:443超时；本地提交完整保留，未强推。后续重试结果以最终交付记录为准。
 
 压力Widget最终补充将自定义shocks及fxShockPct与portfolioId一起保存/恢复，并验证配置边界；最终全量100测试通过、3项可选跳过，类型/lint/format/build通过，相关4条浏览器回归通过（此前全量20条通过）。
+
+生产部署已完成增量迁移0004与真实运行验证：黄金/FX的1Y分析190有效区间，Pearson=-0.3583570842；真实60期滚动有有效结果；PG组合创建/复制/改名/删除及25%×-40%=-10%、10万元→9万元均通过。公网页面及390px手机、原有安全会话检查通过，临时组合均已清理（匹配验证名称计数0），服务全部active。服务器源码包只来自本次已提交文件，保留旧workspace修复。
+
+最终展示补充：矩阵两位小数、悬停完整数值、N/A与原因，概览精简为资产数量/有效对/最高正相关/最低相关；构建/lint/typecheck通过，定向3条浏览器通过。首轮生产回滚目录analytics-previous-20261101；显示微调回滚目录analytics-display-previous-20261101，日志/var/log/atlas-analytics-display-build.log。
+
+GitHub连接仍异常，普通HTTPS、HTTP/1.1重试分别报framing error、443超时与Empty reply。已通过GitHub连接器只读确认远端codex/atlas-v1停留4585a91；d329ee0、981b07c及随后显示修正本地提交保留，未强推、未重写历史。网络恢复后可正常git push origin codex/atlas-v1。

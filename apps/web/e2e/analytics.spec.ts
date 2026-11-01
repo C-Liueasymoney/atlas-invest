@@ -108,7 +108,7 @@ test("fixture matrix, pair detail, zoom, windows, data table, CSV and refresh", 
     page.getByRole("heading", { name: "资产相关性分析", exact: true }),
   ).toBeVisible();
   await expect(page.locator(".analytics-demo")).toContainText("DEMO");
-  await expect(page.locator(".analytics-summary")).toContainText("0.071");
+  await expect(page.locator(".analytics-summary")).toContainText("0.85");
   const cell = page.getByRole("button", {
     name: /国内黄金 Au99.99 与 纳斯达克100指数/,
   });
@@ -168,7 +168,7 @@ test("search, unavailable history and date/frequency/base controls remain explic
   const missing = page.getByRole("button", {
     name: /国内黄金 Au99.99 与 国际黄金参考报价/,
   });
-  await expect(missing).toContainText("—");
+  await expect(missing).toContainText("N/A");
   await missing.focus();
   await expect(
     page.locator(".analytics-matrix-panel [role=status]"),

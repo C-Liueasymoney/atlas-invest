@@ -237,14 +237,6 @@ export function CorrelationAnalytics({
       (best, c) => (!best || c.value! > best.value! ? c : best),
       undefined,
     );
-  const strongest = cells.reduce<AnalyticsCell | undefined>(
-    (best, cell) =>
-      !best || Math.abs(cell.value!) > Math.abs(best.value!) ? cell : best,
-    undefined,
-  );
-  const mean = cells.length
-    ? cells.reduce((sum, c) => sum + c.value!, 0) / cells.length
-    : null;
   const updateAssets = (ids: string[]) =>
     setAssets([...new Set(ids)].slice(0, rollingOnly ? 2 : 10));
   async function refresh() {
@@ -492,17 +484,6 @@ export function CorrelationAnalytics({
               <div className="analytics-summary">
                 <span>
                   有效资产对 <strong>{cells.length}</strong>
-                </span>
-                <span>
-                  平均相关系数 <strong>{coefficient(mean)}</strong>
-                </span>
-                <span>
-                  最强绝对相关{" "}
-                  <strong>
-                    {strongest
-                      ? `${name(strongest.a)} / ${name(strongest.b)} ${coefficient(strongest.value)}`
-                      : "—"}
-                  </strong>
                 </span>
                 <span>
                   资产数量 <strong>{data.assets.length}</strong>

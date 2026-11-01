@@ -12,7 +12,7 @@ export type AnalyticsCell = {
   missingRate: number;
 };
 export const coefficient = (n: number | null) =>
-  n === null ? "—" : n.toFixed(3);
+  n === null ? "N/A" : n.toFixed(2);
 export const missingLabel = (reason: string | null) =>
   ({
     insufficient_samples: "共同样本不足20个",
@@ -23,7 +23,7 @@ export const missingLabel = (reason: string | null) =>
   reason ||
   "暂无可计算数据";
 export const cellDescription = (cell: AnalyticsCell) =>
-  `相关系数 ${coefficient(cell.value)} · 样本 ${cell.n} · 缺失 ${(cell.missingRate * 100).toFixed(1)}% · ${cell.from || "—"} 至 ${cell.to || "—"}${cell.reason ? ` · ${missingLabel(cell.reason)}` : ""}`;
+  `相关系数 ${cell.value === null ? "N/A" : String(cell.value)} · 样本 ${cell.n} · 缺失 ${(cell.missingRate * 100).toFixed(1)}% · ${cell.from || "—"} 至 ${cell.to || "—"}${cell.reason ? ` · ${missingLabel(cell.reason)}` : ""}`;
 export function CorrelationMatrix({
   assets,
   matrix,
