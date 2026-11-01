@@ -120,6 +120,7 @@ export const warnings = [
   "日频按相同起止交易日期的收益区间取交集；周频ISO周、月频自然月各取周期末实际观察，不填充休市价格。",
   "跨市场同一日期的收盘时间不同，可能造成相关性偏差；按资产对交集的矩阵不用于直接估算组合协方差。",
   "FX报价自身采用原始USD/CNY变化；其他价格仅在有效同日汇率存在时转换，既有人民币价格不重复转换。",
+  "周度日期为ISO周周期标签，月度为自然月标签，并非该周期起始日已知结果。",
   "陈旧序列仍可用于历史研究，所选日期范围不保证拥有完整覆盖；相关性低不代表风险小。",
 ];
 export async function correlation(input: AnalysisInput) {
@@ -164,13 +165,18 @@ export async function rollingAnalysis(
   const p = await prepared(input),
     i = input.assets.indexOf(a),
     j = input.assets.indexOf(b);
+  const pairCell = cell(a, b, p.transformed[i], p.transformed[j]);
+  pairCell.missingRate =
+    1 -
+    pairCell.n /
+      Math.max(1, new Set([...p.timelines[i], ...p.timelines[j]]).size);
   return {
     points: rolling(p.transformed[i], p.transformed[j], window, [
       ...p.timelines[i],
       ...p.timelines[j],
     ]),
     pairs: align(p.transformed[i], p.transformed[j]),
-    cell: cell(a, b, p.transformed[i], p.transformed[j]),
+    cell: pairCell,
     window,
     warnings,
     isDemo: p.isDemo,
@@ -202,15 +208,22 @@ export async function availability() {
   );
   return { items };
 }
-export async function refreshAssets(ids: string[]) {
+export async function refreshAssets(
+  ids: string[],
+  range?: { from: string; to: string },
+) {
   ids.forEach(seriesById);
   const items = [];
   for (const id of ids) {
     seriesById(id);
     try {
-      if (["FRED_NASDAQ100", "FRED_SP500"].includes(id))
-        await latestIndex(id, true);
-      else await syncSeries(id);
+      if (["FRED_NASDAQ100", "FRED_SP500"].includes(id)) {
+        try {
+          await syncSeries(id, range);
+        } catch {
+          await latestIndex(id, true);
+        }
+      } else await syncSeries(id, range);
       items.push({ id, status: "requested" });
     } catch {
       items.push({

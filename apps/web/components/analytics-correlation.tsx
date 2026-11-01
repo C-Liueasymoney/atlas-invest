@@ -251,8 +251,20 @@ export function CorrelationAnalytics({
     setRefreshing(true);
     setMessage("");
     try {
-      await api("/api/v1/analytics/refresh", json("POST", { assets }));
-      setMessage("刷新任务已返回；各序列的可用状态与来源见下方。");
+      const refreshResult = await api<{
+        items: { id: string; status: string; message?: string }[];
+      }>(
+        "/api/v1/analytics/refresh",
+        json("POST", { assets, from: dates.from, to: dates.to }),
+      );
+      setMessage(
+        refreshResult.items.some((i) => i.status !== "requested")
+          ? refreshResult.items
+              .filter((i) => i.status !== "requested")
+              .map((i) => `${name(i.id)}：${i.message || "同步不可用"}`)
+              .join("；")
+          : "刷新任务已返回；各序列的可用状态与来源见下方。",
+      );
       setVersion((v) => v + 1);
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "刷新失败");
@@ -267,7 +279,7 @@ export function CorrelationAnalytics({
       {!compact && (
         <PageHeading
           eyebrow="CROSS-ASSET RESEARCH"
-          title="资产相关性"
+          title="资产相关性分析"
           description="以共同区间的收益率与基点变化观察关联；相关性不代表因果，也不预测未来。"
         />
       )}

@@ -183,3 +183,13 @@ ECS临时生产进程及正式切换后验证均通过；公网浏览器实际�
 - correlation-matrix与rolling-correlation注册到原Widget体系，使用稳定JSON配置，支持添加、布局存储和恢复；服务端检查分析配置有效性。相关性与风险入口加入主导航。
 - 审查修复：不完整资产选择保留在组件本地，避免中途取消一个资产就导致Widget失效；矩阵请求失败但滚动Demo成功时仍显示DEMO。
 - lint/typecheck/production build通过；当前全量94测试通过、8项条件性跳过（含待Phase3模块）；4条分析页面浏览器通过，新增Widget替换资产边界单独通过。分析Widget API保存/恢复和非法窗口拒绝自动化测试通过。此阶段无数据库迁移。
+
+## 2026-11-01 — Analytics Phase 3：组合压力与交付
+
+- 新增组合编辑、百分比/基准币市值输入、显式现金、初始市值、多个组合保存/复制/改名/删除；默认可修改示例不虚构债券ETF。新增migration0004 owner隔离analytics_portfolios，JSON对象存储；preview/demo独立私有文件。
+- 单期假设冲击按权重合成，外币收益乘汇率因子一次，已换币敞口不重复叠加；缺显式外币冲击假设则拒绝。支持初始/冲击后市值、每资产金额及净亏损贡献（可负抵消）、亏损参考阈值与高波动仓位目标/提示。宏观利率不允许作为持仓，现金本币收益显式0。
+- Portfolio Stress Test第三个Widget接入原看板；独立页面下方提供完整组合编辑器。修复计算/保存期间编辑导致旧响应覆盖，以及恢复Widget期间改FX丢弃正确组合的竞态。
+- 分析刷新补充所选起止日期到现有syncSeries/Collector CLI/Provider；index优先FRED回填，失败才用已有公开指数源。周/月周期标签和缺失率口径明确说明。
+- 最终 lint/typecheck/format/production build通过；28测试文件全通过，99项通过、3项可选外网/本机真实缓存探测默认跳过。真实PG集成全部执行（含owner隔离、迁移幂等、JSON形状与复制删除）。全量Playwright20条通过，含旧行情/配置/看板和新增分析/组合。
+- 初期历史组合回报/年化波动/最大回撤/协方差/风险贡献明确未实现，history-risk返回unavailable与null；XAU历史与债券ETF未接入，不以假行情补足。数据、方法、API、启动和限制详见docs/ANALYTICS.md及README。
+- 无新增依赖，无修改预先存在的workspace.ts/live-api.test.ts修复与本机生成文件；仅暂存本功能文件。新表为增量迁移，回滚代码可保留组合配置。

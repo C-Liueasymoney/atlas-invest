@@ -31,6 +31,7 @@ test.beforeEach(async ({ page }) => {
   );
   await page.route("**/api/v1/analytics/**", async (route) => {
     const url = new URL(route.request().url());
+    if (url.pathname.includes("/portfolio")) return route.fallback();
     if (url.pathname.endsWith("availability"))
       return route.fulfill({ json: { items } });
     if (url.pathname.endsWith("refresh"))
@@ -104,7 +105,7 @@ test("fixture matrix, pair detail, zoom, windows, data table, CSV and refresh", 
 }) => {
   await page.goto("/analytics/correlation");
   await expect(
-    page.getByRole("heading", { name: "资产相关性", exact: true }),
+    page.getByRole("heading", { name: "资产相关性分析", exact: true }),
   ).toBeVisible();
   await expect(page.locator(".analytics-demo")).toContainText("DEMO");
   await expect(page.locator(".analytics-summary")).toContainText("0.071");
@@ -146,8 +147,10 @@ test("fixture matrix, pair detail, zoom, windows, data table, CSV and refresh", 
     (r) => r.url().endsWith("/analytics/refresh") && r.method() === "POST",
   );
   await page.getByRole("button", { name: "刷新分析数据" }).click();
-  expect((await refresh).postDataJSON()).toEqual({
+  expect((await refresh).postDataJSON()).toMatchObject({
     assets: ["SGE_AU9999_D1", "FX_USDCNY_D1", "FRED_NASDAQ100"],
+    from: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+    to: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
   });
 });
 test("search, unavailable history and date/frequency/base controls remain explicit", async ({

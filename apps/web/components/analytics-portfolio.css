@@ -1,0 +1,111 @@
+.portfolio-analytics {
+  margin-top: 24px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+}
+.portfolio-editor {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.portfolio-header {
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+.portfolio-header h2 {
+  margin: 0;
+}
+.portfolio-header p,
+.portfolio-help {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+.portfolio-controls {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 14px 0;
+}
+.portfolio-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+}
+.portfolio-analytics input,
+.portfolio-analytics select {
+  max-width: 100%;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+  color: inherit;
+}
+.portfolio-analytics input[type="number"] {
+  width: 125px;
+}
+.portfolio-scroll {
+  overflow: auto;
+}
+.portfolio-analytics table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.portfolio-analytics th,
+.portfolio-analytics td {
+  text-align: left;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.portfolio-alert {
+  color: var(--negative, #d15845);
+}
+.portfolio-result {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.portfolio-result > strong {
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+.portfolio-compact {
+  margin: 0;
+  padding: 8px;
+  border: 0;
+}
+.portfolio-compact .portfolio-header p {
+  display: none;
+}
+.portfolio-compact .portfolio-result > strong {
+  font-size: 18px;
+}
+.portfolio-compact .portfolio-controls {
+  gap: 8px;
+}
+.portfolio-compact .portfolio-help {
+  font-size: 11px;
+}
+@media (max-width: 640px) {
+  .portfolio-analytics {
+    padding: 12px;
+  }
+  .portfolio-header {
+    flex-direction: column;
+  }
+  .portfolio-controls label {
+    flex: 1;
+    min-width: 130px;
+  }
+}

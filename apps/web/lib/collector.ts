@@ -4,7 +4,11 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { AppError } from "./errors";
 import { seriesById } from "./catalog";
-export async function collectorCommand(seriesId: string, probe = false) {
+export async function collectorCommand(
+  seriesId: string,
+  probe = false,
+  range?: { from: string; to: string },
+) {
   const s = seriesById(seriesId);
   if (!["akshare_sge", "cftc"].includes(s.providerId))
     throw new AppError("UNSUPPORTED_INTERVAL", "此采集器命令未启用");
@@ -14,6 +18,7 @@ export async function collectorCommand(seriesId: string, probe = false) {
   const python =
     process.env.COLLECTOR_PYTHON || (existsSync(local) ? local : "python3");
   const args = ["-m", "atlas_collector", "sync", "--series", seriesId];
+  if (range && !probe) args.push("--start", range.from, "--end", range.to);
   if (probe) {
     args.push(
       "--probe",

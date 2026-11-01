@@ -282,7 +282,10 @@ export async function compare(
     mode,
   };
 }
-export async function syncSeries(id: string) {
+export async function syncSeries(
+  id: string,
+  range?: { from: string; to: string },
+) {
   if (previewMode()) return refreshPreview(id);
   if (demoMode())
     throw new AppError(
@@ -297,7 +300,7 @@ export async function syncSeries(id: string) {
   if (!(await providerConfig(route.providerId)).enabled)
     throw new AppError("SOURCE_UNAVAILABLE", "数据源已停用");
   if (["akshare_sge", "cftc"].includes(route.providerId)) {
-    const result = await collectorCommand(id);
+    const result = await collectorCommand(id, false, range);
     return {
       status: "success",
       message: "采集器已完成，详情见 ingest_runs",
@@ -309,7 +312,10 @@ export async function syncSeries(id: string) {
   const sample = await fetchSample(
     route.providerId,
     route.providerSymbol,
-    s.kind === "quote" ? undefined : year.toISOString().slice(0, 10),
+    s.kind === "quote"
+      ? undefined
+      : range?.from || year.toISOString().slice(0, 10),
+    s.kind === "quote" ? undefined : range?.to,
   );
   await persistSample(id, sample);
   return {

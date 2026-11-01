@@ -11,6 +11,7 @@ const widget = z.object({
     "metric-card",
     "price-chart",
     "correlation-matrix",
+    "portfolio-stress-test",
     "rolling-correlation",
     "compare-chart",
     "indicator-table",
@@ -33,7 +34,11 @@ function checkWidgets(widgets: z.infer<typeof widget>[]) {
     throw new AppError("VALIDATION_ERROR", "Widget id 重复");
   for (const w of widgets) {
     if (
-      ["correlation-matrix", "rolling-correlation"].includes(w.type) &&
+      [
+        "correlation-matrix",
+        "rolling-correlation",
+        "portfolio-stress-test",
+      ].includes(w.type) &&
       !validateWidget(w)
     )
       throw new AppError("VALIDATION_ERROR", "分析组件配置无效");

@@ -103,3 +103,9 @@ services/collector/.venv/bin/python -m pytest services/collector/tests -q
 本轮交付可运行、可验证的V1核心；严格规格验收仍未全部满足：FRED缺Key尚未完成两条真实序列请求；Alpha Vantage仅符号搜索/样本探测，行情适配与两个行情指标验证未完成；当前路由仅接受已核实Catalog映射，没有可用的跨Provider等价备源；SGE最新报价存在源时间异常。Excel文件必须整理为单表并明确映射日期/数值列，未自动识别每版WGC原始工作簿。Python离线job不自动评估站内预警，网站行情读取/手动评估/网页同步会评估；不保证即时通知。完整市场节假日日历、图表事件标记、完整多用户Auth/RLS和邮件通知为后续工作。
 
 [实施状态与阶段提交](docs/IMPLEMENTATION_STATUS.md) · [API设置](docs/API_SETUP.md) · [源文档与实测](docs/DATA_SOURCES.md) · [接口契约](docs/API.md) · [导入](docs/IMPORTS.md) · [部署与备份](docs/DEPLOYMENT.md)
+
+## 资产相关性与组合风险
+
+进入 `/analytics/correlation`（导航“相关性与风险”）：选择历史资产、区间、日/周/月及CNY/USD，点击矩阵查看滚动窗口、散点和CSV；页面下方可保存多个模拟组合并设置单期假设冲击。利率使用bp变化，不作为债券价格；无历史的XAU及未接入债券ETF明确不可用。三个分析Widget可加入现有研究看板并保存配置。
+
+live先执行 `npm run db:migrate`（新增0004组合表）；其余启动及凭据配置沿用上文。计算、来源覆盖、FX和再平衡边界、API及后续历史风险接口见[分析模块说明](docs/ANALYTICS.md)。历史组合波动/回撤等仍为后续增强，不以单期情景替代。

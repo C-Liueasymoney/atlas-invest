@@ -1,6 +1,15 @@
 import { z } from "zod";
 const seriesId = z.string().min(1);
 export const widgetRegistry = {
+  "portfolio-stress-test": {
+    title: "组合压力测试",
+    description: "保存的组合与单期假设冲击",
+    defaultSize: { w: 8, h: 9 },
+    configSchema: z.object({
+      portfolioId: z.union([z.uuid(), z.literal("")]).default(""),
+    }),
+    defaultConfig: { portfolioId: "" },
+  },
   "correlation-matrix": {
     title: "资产相关性矩阵",
     description: "收益率热力图与数据质量",

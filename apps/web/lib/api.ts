@@ -1,3 +1,4 @@
+import { portfolioApi } from "./analytics/portfolio-api";
 import { analyticsApi } from "./analytics/api";
 import { previewMode, refreshPreview } from "./market-preview";
 import { latestDomesticGold } from "./latest-gold";
@@ -90,6 +91,8 @@ export async function dispatch(
       });
     }
     authorize(request);
+    const portfolio = await portfolioApi(request, p, url);
+    if (portfolio) return portfolio;
     const analytics = await analyticsApi(request, p, url);
     if (analytics) return analytics;
     const related = await relatedApi(request, p);

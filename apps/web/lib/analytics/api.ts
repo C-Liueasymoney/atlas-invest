@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { body, json, parse, dateString } from "../api-helpers";
+import {
+  body,
+  json,
+  parse,
+  dateString as sharedDateString,
+} from "../api-helpers";
 import { seriesById } from "../catalog";
 import { AppError } from "../errors";
 import {
@@ -8,16 +13,39 @@ import {
   rollingAnalysis,
   refreshAssets,
 } from "./service";
+const dateString = sharedDateString.refine(
+  (s) => new Date(s).toISOString().slice(0, 10) === s,
+  "日期无效",
+);
 export async function analyticsApi(request: Request, p: string[], url: URL) {
   if (p[0] !== "analytics") return;
   if (p[1] === "assets" && p[2] === "availability" && request.method === "GET")
     return json(await availability());
   if (p[1] === "refresh" && request.method === "POST") {
     const d = parse(
-      z.object({ assets: z.array(z.string()).min(1).max(10) }),
+      z.object({
+        assets: z.array(z.string()).min(1).max(10),
+        from: dateString.optional(),
+        to: dateString.optional(),
+      }),
       await body(request),
     );
-    return json(await refreshAssets(d.assets));
+    if (
+      (d.from && !d.to) ||
+      (!d.from && d.to) ||
+      (d.from &&
+        d.to &&
+        (d.from > d.to ||
+          d.to > new Date().toISOString().slice(0, 10) ||
+          Date.parse(d.to) - Date.parse(d.from) > 11 * 366 * 86400000))
+    )
+      throw new AppError("VALIDATION_ERROR", "回填日期无效或超过11年");
+    return json(
+      await refreshAssets(
+        d.assets,
+        d.from && d.to ? { from: d.from, to: d.to } : undefined,
+      ),
+    );
   }
   if (p[1] !== "correlation" || request.method !== "GET") return;
   const assets = parse(

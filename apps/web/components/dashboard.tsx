@@ -32,6 +32,7 @@ import { IndicatorTable, MetricWidget, SourceHealth } from "./market";
 import { PriceChart } from "./charts";
 import { CompareChart } from "./compare";
 import { MarketHero } from "./market-focus";
+import { PortfolioAnalytics } from "./analytics-portfolio";
 import { CorrelationAnalytics } from "./analytics-correlation";
 import { RelatedPanel } from "./related-panel";
 type Dashboard = {
@@ -509,45 +510,46 @@ export function DashboardPage() {
               </button>
             ))}
           </div>
-          {widgetType !== "source-health" && (
-            <label>
-              选择指标
-              {widgetType === "compare-chart" ||
-              widgetType === "indicator-table" ||
-              widgetType === "correlation-matrix" ||
-              widgetType === "rolling-correlation" ? (
-                <div className="multi-select">
-                  {catalog.data?.items.map((s) => (
-                    <label className="checkbox" key={s.id}>
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.includes(s.id)}
-                        onChange={(e) =>
-                          setSelectedIds(
-                            e.target.checked
-                              ? [...selectedIds, s.id]
-                              : selectedIds.filter((id) => id !== s.id),
-                          )
-                        }
-                      />
-                      {s.nameZh}
-                    </label>
-                  ))}
-                </div>
-              ) : (
-                <select
-                  value={selectedSeries}
-                  onChange={(e) => setSelectedSeries(e.target.value)}
-                >
-                  {catalog.data?.items.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.nameZh} · {s.unit}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </label>
-          )}
+          {widgetType !== "source-health" &&
+            widgetType !== "portfolio-stress-test" && (
+              <label>
+                选择指标
+                {widgetType === "compare-chart" ||
+                widgetType === "indicator-table" ||
+                widgetType === "correlation-matrix" ||
+                widgetType === "rolling-correlation" ? (
+                  <div className="multi-select">
+                    {catalog.data?.items.map((s) => (
+                      <label className="checkbox" key={s.id}>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(s.id)}
+                          onChange={(e) =>
+                            setSelectedIds(
+                              e.target.checked
+                                ? [...selectedIds, s.id]
+                                : selectedIds.filter((id) => id !== s.id),
+                            )
+                          }
+                        />
+                        {s.nameZh}
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <select
+                    value={selectedSeries}
+                    onChange={(e) => setSelectedSeries(e.target.value)}
+                  >
+                    {catalog.data?.items.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.nameZh} · {s.unit}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </label>
+            )}
           <button
             className="primary"
             disabled={
@@ -569,7 +571,8 @@ export function DashboardPage() {
                 widgetType === "correlation-matrix" ||
                 widgetType === "rolling-correlation"
                   ? { seriesIds: selectedIds }
-                  : widgetType === "source-health"
+                  : widgetType === "source-health" ||
+                      widgetType === "portfolio-stress-test"
                     ? {}
                     : { seriesId: selectedSeries }),
               };
@@ -596,6 +599,14 @@ function WidgetContent({
   onConfig: (patch: Widget["config"]) => void;
 }) {
   switch (w.type) {
+    case "portfolio-stress-test":
+      return (
+        <PortfolioAnalytics
+          compact
+          initialPortfolioId={w.config.portfolioId}
+          onConfig={onConfig}
+        />
+      );
     case "correlation-matrix":
     case "rolling-correlation":
       return (
