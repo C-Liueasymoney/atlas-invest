@@ -3,12 +3,15 @@ import { workspace } from "./db/workspace";
 import { body, parse, json } from "./api-helpers";
 import { AppError } from "./errors";
 import { seriesById } from "./catalog";
+import { validateWidget } from "./widgets/registry";
 const config = z.record(z.string(), z.unknown());
 const widget = z.object({
   id: z.uuid(),
   type: z.enum([
     "metric-card",
     "price-chart",
+    "correlation-matrix",
+    "rolling-correlation",
     "compare-chart",
     "indicator-table",
     "factor-explainer",
@@ -29,6 +32,11 @@ function checkWidgets(widgets: z.infer<typeof widget>[]) {
   if (new Set(widgets.map((w) => w.id)).size !== widgets.length)
     throw new AppError("VALIDATION_ERROR", "Widget id 重复");
   for (const w of widgets) {
+    if (
+      ["correlation-matrix", "rolling-correlation"].includes(w.type) &&
+      !validateWidget(w)
+    )
+      throw new AppError("VALIDATION_ERROR", "分析组件配置无效");
     if (w.layout.x + w.layout.w > 12)
       throw new AppError("VALIDATION_ERROR", "Widget 超出12列边界");
     if (w.config.seriesId) seriesById(String(w.config.seriesId));
@@ -44,7 +52,9 @@ function checkWidgets(widgets: z.infer<typeof widget>[]) {
       throw new AppError("UNSUPPORTED_INTERVAL", "只有 OHLC 指标可使用K线");
     if (
       w.config.range &&
-      !["1M", "3M", "6M", "1Y", "3Y", "ALL"].includes(String(w.config.range))
+      !["1M", "3M", "6M", "1Y", "3Y", "5Y", "custom", "ALL"].includes(
+        String(w.config.range),
+      )
     )
       throw new AppError("VALIDATION_ERROR", "不支持的图表范围");
   }

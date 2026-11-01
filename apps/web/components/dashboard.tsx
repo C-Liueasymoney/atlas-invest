@@ -32,6 +32,7 @@ import { IndicatorTable, MetricWidget, SourceHealth } from "./market";
 import { PriceChart } from "./charts";
 import { CompareChart } from "./compare";
 import { MarketHero } from "./market-focus";
+import { CorrelationAnalytics } from "./analytics-correlation";
 import { RelatedPanel } from "./related-panel";
 type Dashboard = {
   id: string;
@@ -512,7 +513,9 @@ export function DashboardPage() {
             <label>
               选择指标
               {widgetType === "compare-chart" ||
-              widgetType === "indicator-table" ? (
+              widgetType === "indicator-table" ||
+              widgetType === "correlation-matrix" ||
+              widgetType === "rolling-correlation" ? (
                 <div className="multi-select">
                   {catalog.data?.items.map((s) => (
                     <label className="checkbox" key={s.id}>
@@ -548,14 +551,23 @@ export function DashboardPage() {
           <button
             className="primary"
             disabled={
-              (widgetType === "compare-chart" && selectedIds.length < 2) ||
+              ([
+                "compare-chart",
+                "correlation-matrix",
+                "rolling-correlation",
+              ].includes(widgetType) &&
+                selectedIds.length < 2) ||
+              (widgetType === "rolling-correlation" &&
+                selectedIds.length !== 2) ||
               (widgetType === "indicator-table" && !selectedIds.length)
             }
             onClick={() => {
               const config = {
                 ...widgetRegistry[widgetType].defaultConfig,
                 ...(widgetType === "compare-chart" ||
-                widgetType === "indicator-table"
+                widgetType === "indicator-table" ||
+                widgetType === "correlation-matrix" ||
+                widgetType === "rolling-correlation"
                   ? { seriesIds: selectedIds }
                   : widgetType === "source-health"
                     ? {}
@@ -584,6 +596,34 @@ function WidgetContent({
   onConfig: (patch: Widget["config"]) => void;
 }) {
   switch (w.type) {
+    case "correlation-matrix":
+    case "rolling-correlation":
+      return (
+        <CorrelationAnalytics
+          compact
+          initialAssets={w.config.seriesIds}
+          initialRange={
+            w.config.range === "custom" && w.config.from && w.config.to
+              ? { from: w.config.from, to: w.config.to }
+              : w.config.range
+          }
+          initialFrequency={w.config.frequency}
+          initialCurrency={w.config.currency}
+          initialWindow={w.config.window}
+          rollingOnly={w.type === "rolling-correlation"}
+          onConfig={(c) =>
+            onConfig({
+              seriesIds: c.assets,
+              range: c.range,
+              from: c.from,
+              to: c.to,
+              frequency: c.frequency,
+              currency: c.currency,
+              window: c.window,
+            })
+          }
+        />
+      );
     case "price-chart":
       return (
         <PriceChart

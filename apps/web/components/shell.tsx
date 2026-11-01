@@ -16,6 +16,7 @@ import { ErrorNotice, Modal } from "./ui";
 const links = [
   { href: "/dashboard", title: "市场总览" },
   { href: "/workspace", title: "图表" },
+  { href: "/analytics/correlation", title: "相关性与风险" },
   { href: "/indicators", title: "指标" },
   { href: "/watchlists", title: "自选" },
   { href: "/alerts", title: "预警" },
