@@ -7,6 +7,10 @@ export const widgetRegistry = {
     defaultSize: { w: 8, h: 9 },
     configSchema: z.object({
       portfolioId: z.union([z.uuid(), z.literal("")]).default(""),
+      shocks: z
+        .record(z.string(), z.number().finite().min(-100).max(1000))
+        .optional(),
+      fxShockPct: z.number().finite().gt(-100).max(1000).optional(),
     }),
     defaultConfig: { portfolioId: "" },
   },
@@ -125,6 +129,8 @@ export type Widget = {
     from?: string;
     to?: string;
     portfolioId?: string;
+    shocks?: Record<string, number>;
+    fxShockPct?: number;
   };
   layout: { x: number; y: number; w: number; h: number };
 };

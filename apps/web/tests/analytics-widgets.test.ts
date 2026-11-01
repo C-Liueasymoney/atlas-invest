@@ -56,3 +56,14 @@ it("saves and restores stable analytics widget configs through workspace API", a
     await rm(dir, { recursive: true, force: true });
   }
 });
+it("validates persisted stress shocks and FX assumptions", () => {
+  const w = createWidget("portfolio-stress-test", {
+    portfolioId: "33333333-3333-4333-8333-333333333333",
+    shocks: { FRED_NASDAQ100: -40 },
+    fxShockPct: -5,
+  });
+  expect(validateWidget(w)).toBe(true);
+  expect(
+    validateWidget({ ...w, config: { ...w.config, fxShockPct: -100 } }),
+  ).toBe(false);
+});

@@ -25,7 +25,7 @@ const example: PortfolioInput = {
   highVolatilityTargetPct: 25,
   highVolatilityLimitPct: 30,
 };
-const initialShocks: Record<string, number> = {
+const defaultShocks: Record<string, number> = {
   FRED_NASDAQ100: -40,
   SGE_AU9999_D1: -10,
 };
@@ -35,11 +35,19 @@ const money = (n: number) =>
 export function PortfolioAnalytics({
   compact = false,
   initialPortfolioId,
+  initialShocks,
+  initialFxShockPct,
   onConfig,
 }: {
   compact?: boolean;
   initialPortfolioId?: string;
-  onConfig?: (config: { portfolioId: string }) => void;
+  initialShocks?: Record<string, number>;
+  initialFxShockPct?: number;
+  onConfig?: (config: {
+    portfolioId: string;
+    shocks?: Record<string, number>;
+    fxShockPct?: number;
+  }) => void;
 }) {
   const remote = useRemote<{ items: SavedPortfolio[] }>(
     "/api/v1/analytics/portfolios",
@@ -47,13 +55,46 @@ export function PortfolioAnalytics({
   const [selected, setSelected] = useState(initialPortfolioId || "");
   const [loadedPortfolioId, setLoadedPortfolioId] = useState("");
   const [draft, setDraft] = useState<PortfolioInput>(example);
-  const [shocks, setShocks] = useState<Record<string, number>>(initialShocks);
-  const [fx, setFx] = useState("0");
+  const [shocks, setShocks] = useState<Record<string, number>>(() => ({
+    ...(initialShocks ?? defaultShocks),
+  }));
+  const [fx, setFx] = useState(() => String(initialFxShockPct ?? 0));
   const [result, setResult] = useState<ScenarioResult>();
   const [loadError, setLoadError] = useState("");
   const revision = useRef(0);
   const selectionGeneration = useRef(0);
+  const configCallback = useRef(onConfig);
+  const lastEmittedConfig = useRef("");
   const action = useAction();
+  const settingsKey = JSON.stringify({
+    portfolioId: selected,
+    shocks,
+    fxShockPct: fx.trim() === "" ? null : Number(fx),
+  });
+  useEffect(() => {
+    configCallback.current = onConfig;
+  }, [onConfig]);
+  useEffect(() => {
+    const settings = JSON.parse(settingsKey) as {
+      portfolioId: string;
+      shocks: Record<string, number>;
+      fxShockPct: number | null;
+    };
+    if (
+      !configCallback.current ||
+      settings.fxShockPct === null ||
+      !Number.isFinite(settings.fxShockPct) ||
+      settings.fxShockPct <= -100 ||
+      settings.fxShockPct > 1000 ||
+      !Object.values(settings.shocks).every(
+        (n) => Number.isFinite(n) && n >= -100 && n <= 1000,
+      ) ||
+      lastEmittedConfig.current === settingsKey
+    )
+      return;
+    lastEmittedConfig.current = settingsKey;
+    configCallback.current({ ...settings, fxShockPct: settings.fxShockPct });
+  }, [settingsKey]);
   useEffect(() => {
     const id = initialPortfolioId;
     revision.current++;

@@ -604,6 +604,8 @@ function WidgetContent({
         <PortfolioAnalytics
           compact
           initialPortfolioId={w.config.portfolioId}
+          initialShocks={w.config.shocks}
+          initialFxShockPct={w.config.fxShockPct}
           onConfig={onConfig}
         />
       );

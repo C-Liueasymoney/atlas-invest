@@ -193,3 +193,7 @@ ECS临时生产进程及正式切换后验证均通过；公网浏览器实际�
 - 最终 lint/typecheck/format/production build通过；28测试文件全通过，99项通过、3项可选外网/本机真实缓存探测默认跳过。真实PG集成全部执行（含owner隔离、迁移幂等、JSON形状与复制删除）。全量Playwright20条通过，含旧行情/配置/看板和新增分析/组合。
 - 初期历史组合回报/年化波动/最大回撤/协方差/风险贡献明确未实现，history-risk返回unavailable与null；XAU历史与债券ETF未接入，不以假行情补足。数据、方法、API、启动和限制详见docs/ANALYTICS.md及README。
 - 无新增依赖，无修改预先存在的workspace.ts/live-api.test.ts修复与本机生成文件；仅暂存本功能文件。新表为增量迁移，回滚代码可保留组合配置。
+
+Phase1提交867f7de、Phase2提交4585a91已分别成功推送origin/codex/atlas-v1。Phase3提交d329ee0首次推送HTTP/2 framing error，HTTP/1.1重试连接github.com:443超时；本地提交完整保留，未强推。后续重试结果以最终交付记录为准。
+
+压力Widget最终补充将自定义shocks及fxShockPct与portfolioId一起保存/恢复，并验证配置边界；最终全量100测试通过、3项可选跳过，类型/lint/format/build通过，相关4条浏览器回归通过（此前全量20条通过）。
