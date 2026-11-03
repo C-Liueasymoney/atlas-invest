@@ -1,3 +1,4 @@
+import { inflationInputs } from "./inflation-period";
 import {
   previewMode,
   previewSeries,
@@ -282,10 +283,7 @@ export async function compare(
     mode,
   };
 }
-export async function syncSeries(
-  id: string,
-  range?: { from: string; to: string },
-) {
+async function syncOneSeries(id: string, range?: { from: string; to: string }) {
   if (previewMode()) return refreshPreview(id);
   if (demoMode())
     throw new AppError(
@@ -363,4 +361,16 @@ export async function importsForSeries(id: string) {
     `SELECT id,file_name AS "fileName",file_sha256 AS "fileSha256",stat_period_end::text AS "statPeriodEnd",released_at AS "releasedAt",imported_at AS "importedAt",source_url AS "sourceUrl",row_count AS "rowCount",metadata FROM data_imports WHERE dataset_type=$1 AND owner_id=$2 ORDER BY imported_at DESC LIMIT 20`,
     [id, "00000000-0000-4000-8000-000000000001"],
   );
+}
+
+export async function syncSeries(
+  id: string,
+  range?: { from: string; to: string },
+) {
+  const result = await syncOneSeries(id, range);
+  const input = Object.hasOwn(inflationInputs, id)
+    ? inflationInputs[id]
+    : undefined;
+  if (input && !previewMode()) await syncOneSeries(input.id, range);
+  return result;
 }

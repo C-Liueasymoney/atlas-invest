@@ -109,10 +109,10 @@ def fetch(series, start, end, client=None, credential_connection=None):
     client = client or JsonClient()
     provider, symbol = series['providerId'], series['providerSymbol']
     if provider == 'eastmoney_macro':
-        if symbol != 'RPT_ECONOMY_CPI:NATIONAL_SAME':
+        if symbol not in ('RPT_ECONOMY_CPI:NATIONAL_SAME', 'RPT_ECONOMY_CPI:NATIONAL_SEQUENTIAL'):
             raise CollectorError('unsupported', 'Only nationwide CPI year-on-year is supported.')
         from .inflation import fetch_china_cpi
-        return fetch_china_cpi(client, start, end)
+        return fetch_china_cpi(client, start, end, symbol.split(":")[1])
     if provider == 'cftc':
         if symbol != '088691':
             raise CollectorError('unsupported', 'Only the verified COMEX Gold contract 088691 is supported.')

@@ -1,10 +1,11 @@
 import { z } from "zod";
 import type { Point } from "./types";
-export function chinaCpiUrl() {
+export type ChinaCpiField = "NATIONAL_SAME" | "NATIONAL_SEQUENTIAL";
+export function chinaCpiUrl(field: ChinaCpiField = "NATIONAL_SAME") {
   const url = new URL("https://datacenter-web.eastmoney.com/api/data/v1/get");
   url.search = new URLSearchParams({
     reportName: "RPT_ECONOMY_CPI",
-    columns: "REPORT_DATE,NATIONAL_SAME",
+    columns: `REPORT_DATE,${field}`,
     pageNumber: "1",
     pageSize: "2000",
     sortColumns: "REPORT_DATE",
@@ -14,23 +15,16 @@ export function chinaCpiUrl() {
   }).toString();
   return url;
 }
-export function parseChinaCpi(raw: unknown): Point[] {
+export function parseChinaCpi(
+  raw: unknown,
+  field: ChinaCpiField = "NATIONAL_SAME",
+): Point[] {
   const payload = z
     .object({
       success: z.literal(true),
       result: z.object({
         pages: z.number().int().max(1).optional(),
-        data: z.array(
-          z.object({
-            REPORT_DATE: z.string(),
-            NATIONAL_SAME: z
-              .union([
-                z.number().finite(),
-                z.string().regex(/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/),
-              ])
-              .nullable(),
-          }),
-        ),
+        data: z.array(z.object({ REPORT_DATE: z.string() }).passthrough()),
       }),
     })
     .parse(raw);
@@ -42,7 +36,14 @@ export function parseChinaCpi(raw: unknown): Point[] {
       time > new Date().toISOString().slice(0, 7) + "-01"
     )
       throw Error("Invalid CPI observation month");
-    const value = row.NATIONAL_SAME === null ? null : String(row.NATIONAL_SAME);
+    const parsed = z
+      .union([
+        z.number().finite(),
+        z.string().regex(/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/),
+      ])
+      .nullable()
+      .parse(row[field]);
+    const value = parsed === null ? null : String(parsed);
     if (value !== null && !Number.isFinite(Number(value)))
       throw Error("Invalid CPI percentage");
     if (points.has(time) && points.get(time) !== value)

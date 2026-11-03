@@ -29,3 +29,11 @@ def test_fred_cpi_requests_official_yoy_units_not_raw_index(monkeypatch):
             return {'count': 1, 'observations': [{'date': '2024-01-01', 'value': '3.1'}]}
     rows = fetch({'providerId': 'fred', 'providerSymbol': 'CPIAUCNS:pc1'}, date(2024,1,1), date(2024,2,1), Client())
     assert rows[0].value == Decimal('3.1')
+
+
+def test_china_monthly_changes_are_not_yearly_changes():
+    rows = normalize_china_cpi({'success': True, 'result': {'data': [
+        {'REPORT_DATE': '2024-01-01', 'NATIONAL_SAME': '3.0', 'NATIONAL_SEQUENTIAL': '-0.2'},
+    ]}}, date(2024,1,1), date(2024,2,1), 'NATIONAL_SEQUENTIAL')
+    assert rows[0].value == Decimal('-0.2')
+    assert 'nationwide_cpi_mom_rounded' in rows[0].quality_flags

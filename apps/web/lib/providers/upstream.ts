@@ -226,11 +226,20 @@ export async function fetchSample(
         }
         parser = parseFx;
       } else if (providerId === "eastmoney_macro") {
-        if (symbol !== "RPT_ECONOMY_CPI:NATIONAL_SAME")
-          throw new AppError("INVALID_SERIES", "仅支持全国 CPI 同比率");
-        url = chinaCpiUrl();
+        if (
+          ![
+            "RPT_ECONOMY_CPI:NATIONAL_SAME",
+            "RPT_ECONOMY_CPI:NATIONAL_SEQUENTIAL",
+          ].includes(symbol)
+        )
+          throw new AppError("INVALID_SERIES", "仅支持全国 CPI 同比/环比率");
+        const field =
+          symbol === "RPT_ECONOMY_CPI:NATIONAL_SEQUENTIAL"
+            ? "NATIONAL_SEQUENTIAL"
+            : "NATIONAL_SAME";
+        url = chinaCpiUrl(field);
         parser = (raw) => {
-          const points = parseChinaCpi(raw).filter(
+          const points = parseChinaCpi(raw, field).filter(
             (p) => (!from || p.time >= from) && (!to || p.time <= to),
           );
           const latest = points.findLast((p) => p.value !== null);

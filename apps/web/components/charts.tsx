@@ -1,4 +1,6 @@
 "use client";
+import { inflationInputs } from "../lib/inflation-period";
+import { InflationSummary } from "./inflation-summary";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -46,18 +48,23 @@ export function PriceChart({
 }) {
   const [range, setRange] = useState(initialRange);
   const [type, setType] = useState(initialType);
+  const requestedFrom = rangeFrom(range);
+  const chartFrom =
+    Object.hasOwn(inflationInputs, seriesId) && requestedFrom
+      ? requestedFrom.slice(0, 7) + "-01"
+      : requestedFrom;
   const metadata = useRemote<Series>(
     `/api/v1/series/${encodeURIComponent(seriesId)}/metadata`,
   );
   const remote = useRemote<Envelope>(
     metadata.data && !history
-      ? `/api/v1/series/${encodeURIComponent(seriesId)}/${metadata.data.kind === "ohlc" ? "bars" : "observations"}?interval=1d&from=${rangeFrom(range)}`
+      ? `/api/v1/series/${encodeURIComponent(seriesId)}/${metadata.data.kind === "ohlc" ? "bars" : "observations"}?interval=1d&from=${chartFrom}`
       : null,
   );
   const data = history
     ? {
         ...history,
-        points: history.points.filter((p) => p.time >= rangeFrom(range)),
+        points: history.points.filter((p) => p.time >= chartFrom),
       }
     : remote.data;
   const plotted = data
@@ -69,7 +76,7 @@ export function PriceChart({
   const actualType = hasOhlc && type === "candlestick" ? "candlestick" : "line";
   return (
     <div
-      className={`price-chart ${compact ? "compact-chart" : ""}`}
+      className={`price-chart ${compact ? "compact-chart" : ""} ${Object.hasOwn(inflationInputs, seriesId) ? "has-inflation-summary" : ""}`}
       data-chart-points={plotted.length}
     >
       <div className="chart-toolbar">
@@ -117,6 +124,7 @@ export function PriceChart({
           )}
         </div>
       </div>
+      <InflationSummary seriesId={seriesId} from={chartFrom} />
       <ErrorNotice
         message={remote.error || metadata.error}
         retry={() => {

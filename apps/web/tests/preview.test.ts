@@ -188,7 +188,12 @@ it("blocks collection when the canonical route is disabled", async () => {
 it("includes both equity indexes in the default preview refresh", async () => {
   const previousKey = process.env.FRED_API_KEY;
   delete process.env.FRED_API_KEY;
-  for (const providerId of ["akshare_sge", "gold_api", "frankfurter"])
+  for (const providerId of [
+    "akshare_sge",
+    "gold_api",
+    "frankfurter",
+    "eastmoney_macro",
+  ])
     memory.configs.set(providerId, {
       ...(await providerConfig(providerId)),
       enabled: false,
@@ -204,7 +209,12 @@ it("includes both equity indexes in the default preview refresh", async () => {
       status: "not_configured",
     });
   } finally {
-    for (const providerId of ["akshare_sge", "gold_api", "frankfurter"])
+    for (const providerId of [
+      "akshare_sge",
+      "gold_api",
+      "frankfurter",
+      "eastmoney_macro",
+    ])
       memory.configs.delete(providerId);
     if (previousKey) process.env.FRED_API_KEY = previousKey;
   }

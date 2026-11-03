@@ -3912,3 +3912,16 @@ dd {
 .chart-toolbar { flex-wrap: wrap; }
 
 .chart-toolbar .year-range { flex-direction: row; }
+
+.inflation-summary { margin: 14px 0; padding: 16px; border: 1px solid var(--border); border-radius: 10px; font-size: 13px; }
+.inflation-summary h3 { margin: 0 0 10px; }
+.inflation-summary p { margin: 10px 0; line-height: 1.6; }
+.inflation-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 14px; }
+.inflation-metrics span { display: block; color: var(--muted); font-size: 12px; }
+.inflation-metrics strong { display: block; margin-top: 6px; font-size: 22px; }
+@media (max-width: 640px) { .inflation-metrics { grid-template-columns: 1fr; } }
+
+.market-shell .detail-chart .price-chart.has-inflation-summary,
+.detail-chart .price-chart.has-inflation-summary { height: auto; min-height: 0; }
+.has-inflation-summary > .inflation-summary { flex-shrink: 0; }
+.has-inflation-summary > .chart-canvas-wrap { flex: 0 0 320px; min-height: 320px; }

@@ -1,3 +1,4 @@
+import { inflationSummary } from "./inflation-summary";
 import { portfolioApi } from "./analytics/portfolio-api";
 import { analyticsApi } from "./analytics/api";
 import { previewMode, refreshPreview } from "./market-preview";
@@ -174,6 +175,8 @@ export async function dispatch(
           : undefined;
       if (from && to && from > to)
         throw new AppError("VALIDATION_ERROR", "开始日期不能晚于结束日期");
+      if (p[0] === "inflation" && p[1] && p[2] === "summary")
+        return json(await inflationSummary(p[1], from, to));
       if (p[0] === "series" && p[1]) {
         const s = seriesById(p[1]);
         if (p[2] === "metadata") return json(s);

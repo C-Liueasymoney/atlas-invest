@@ -1,3 +1,4 @@
+import { inflationInputs } from "./inflation-period";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { execFile } from "node:child_process";
@@ -90,7 +91,12 @@ export async function refreshPreview(seriesId?: string) {
   if (!previewMode())
     throw new AppError("FORBIDDEN", "此操作仅用于真实数据预览", 409);
   const ids = seriesId
-    ? [seriesById(seriesId).id]
+    ? [
+        seriesById(seriesId).id,
+        ...(Object.hasOwn(inflationInputs, seriesId)
+          ? [inflationInputs[seriesId].id]
+          : []),
+      ]
     : [
         "SGE_AU9999_D1",
         "XAUUSD_QUOTE",
@@ -102,6 +108,8 @@ export async function refreshPreview(seriesId?: string) {
         "FRED_SP500",
         "US_CPI_YOY_M",
         "CN_CPI_YOY_M",
+        "US_CPI_INDEX_M",
+        "CN_CPI_MOM_M",
       ];
   const results: {
     seriesId: string;
@@ -126,7 +134,12 @@ export async function refreshPreview(seriesId?: string) {
         async () => {
           const { stdout } = await promisify(execFile)(
             process.execPath,
-            [resolve(root(), "scripts/refresh-market.mjs"), "--series", id],
+            [
+              resolve(root(), "scripts/refresh-market.mjs"),
+              "--series",
+              id,
+              "--single",
+            ],
             {
               cwd: root(),
               env: process.env,

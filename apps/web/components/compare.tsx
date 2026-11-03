@@ -1,4 +1,6 @@
 "use client";
+import { inflationInputs } from "../lib/inflation-period";
+import { InflationSummary } from "./inflation-summary";
 import { rangeFrom } from "../lib/chart-range";
 import { YearRange } from "./year-range";
 import Link from "next/link";
@@ -35,7 +37,13 @@ export function CompareChart({
     mode,
     align: "intersection",
   });
-  if (from) params.set("from", from);
+  if (from)
+    params.set(
+      "from",
+      ids.every((id) => Object.hasOwn(inflationInputs, id))
+        ? from.slice(0, 7) + "-01"
+        : from,
+    );
   if (to) params.set("to", to);
   const remote = useRemote<CompareData>(
     ids.length > 1 ? `/api/v1/compare?${params}` : null,
@@ -48,7 +56,12 @@ export function CompareChart({
       points: s.points,
     })) || [];
   return (
-    <div className="compare-chart">
+    <div
+      className={`compare-chart ${ids.some((id) => Object.hasOwn(inflationInputs, id)) ? "has-inflation-summary" : ""}`}
+    >
+      {ids.map((id) => (
+        <InflationSummary key={id} seriesId={id} from={from} to={to} />
+      ))}
       <ErrorNotice message={remote.error} retry={remote.refresh} />
       {ids.length < 2 ? (
         <Empty>请选择至少两项指标，开始比较。</Empty>

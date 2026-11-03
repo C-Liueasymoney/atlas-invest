@@ -31,9 +31,21 @@ const defaults = [
   "FRED_SP500",
   "US_CPI_YOY_M",
   "CN_CPI_YOY_M",
+  "US_CPI_INDEX_M",
+  "CN_CPI_MOM_M",
 ];
 const specified = process.argv.indexOf("--series");
-const ids = specified >= 0 ? [process.argv[specified + 1]] : defaults;
+const companions = {
+  US_CPI_YOY_M: "US_CPI_INDEX_M",
+  CN_CPI_YOY_M: "CN_CPI_MOM_M",
+};
+const requested = process.argv[specified + 1];
+const companion =
+  !process.argv.includes("--single") && Object.hasOwn(companions, requested)
+    ? companions[requested]
+    : undefined;
+const ids =
+  specified >= 0 ? [requested, ...(companion ? [companion] : [])] : defaults;
 if (
   ids.some(
     (id) =>
