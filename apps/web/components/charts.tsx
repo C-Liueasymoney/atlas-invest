@@ -24,16 +24,9 @@ import {
 } from "./api";
 import { withLatestQuote } from "../lib/chart-latest";
 import { Badge, Empty, ErrorNotice, Loading } from "./ui";
-export const ranges = ["1M", "3M", "6M", "1Y", "3Y", "ALL"];
-export function rangeFrom(range: string) {
-  const date = new Date();
-  if (range === "ALL") return "";
-  date.setUTCMonth(
-    date.getUTCMonth() -
-      ({ "1M": 1, "3M": 3, "6M": 6, "1Y": 12, "3Y": 36 }[range] || 12),
-  );
-  return date.toISOString().slice(0, 10);
-}
+import { ranges, rangeFrom } from "../lib/chart-range";
+import { YearRange } from "./year-range";
+export { ranges, rangeFrom } from "../lib/chart-range";
 export function PriceChart({
   seriesId,
   range: initialRange = "1Y",
@@ -94,6 +87,12 @@ export function PriceChart({
             </button>
           ))}
         </div>
+        <YearRange
+          onChange={(next) => {
+            setRange(next);
+            onConfig?.({ range: next });
+          }}
+        />
         <div className="chart-mode">
           <button
             className={actualType === "line" ? "selected" : ""}

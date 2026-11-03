@@ -51,6 +51,17 @@ function provider(
 }
 export const providers: ProviderDefinition[] = [
   provider(
+    "eastmoney_macro",
+    "东方财富 · 中国宏观",
+    "宏观数据",
+    "https://data.eastmoney.com/cjsj/cpi.html",
+    "none",
+    ["macro"],
+    ["observations", "search"],
+    ["1mo"],
+    "periodic",
+  ),
+  provider(
     "akshare_sge",
     "AKShare / 上海黄金交易所",
     "国内市场",

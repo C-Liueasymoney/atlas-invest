@@ -32,6 +32,7 @@ try {
       derived: "Derived",
       wgc_import: "WGC manual import",
       cftc: "CFTC",
+      eastmoney_macro: "东方财富 · 中国宏观",
     })) {
       await sql`INSERT INTO providers(id,name,enabled) VALUES(${id},${name},${!["yahoo", "fmp"].includes(id)}) ON CONFLICT(id) DO NOTHING`;
     }

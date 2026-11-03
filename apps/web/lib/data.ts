@@ -308,7 +308,7 @@ export async function syncSeries(
     };
   }
   const year = new Date();
-  year.setUTCFullYear(year.getUTCFullYear() - 3);
+  year.setUTCFullYear(year.getUTCFullYear() - (s.historyYears ?? 3));
   const sample = await fetchSample(
     route.providerId,
     route.providerSymbol,

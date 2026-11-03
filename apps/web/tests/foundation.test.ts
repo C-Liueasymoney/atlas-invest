@@ -34,7 +34,7 @@ describe("normalized PostgreSQL schema", () => {
     expect(catalog.find((s) => s.id === "SGE_AU9999_D1")?.priceDefinition).toBe(
       "spot",
     );
-    expect(new Set(catalog.map((s) => s.id)).size).toBe(17);
+    expect(new Set(catalog.map((s) => s.id)).size).toBe(catalog.length);
   });
   it("registers the actual Nasdaq-100 and S&P 500 daily index series and adds them to a new watchlist", () => {
     expect(catalog.find((s) => s.id === "FRED_NASDAQ100")).toMatchObject({

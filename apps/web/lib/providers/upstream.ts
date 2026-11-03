@@ -1,3 +1,4 @@
+import { parseChinaCpi, chinaCpiUrl } from "../inflation";
 import { createHash } from "node:crypto";
 import { collectorCommand } from "../collector";
 import { z } from "zod";
@@ -176,7 +177,9 @@ export function parseFred(data: unknown, symbol: string): NormalizedSample {
     value: latest.value,
     asOf: latest.time + "T00:00:00Z",
     fetchedAt: new Date().toISOString(),
-    unit: ["DFII10", "DGS10", "DFF"].includes(symbol) ? "percent" : "index",
+    unit: ["DFII10", "DGS10", "DFF", "CPIAUCNS:pc1"].includes(symbol)
+      ? "percent"
+      : "index",
     currency: "USD",
   };
 }
@@ -222,6 +225,31 @@ export async function fetchSample(
           if (to) url.searchParams.set("to", to);
         }
         parser = parseFx;
+      } else if (providerId === "eastmoney_macro") {
+        if (symbol !== "RPT_ECONOMY_CPI:NATIONAL_SAME")
+          throw new AppError("INVALID_SERIES", "仅支持全国 CPI 同比率");
+        url = chinaCpiUrl();
+        parser = (raw) => {
+          const points = parseChinaCpi(raw).filter(
+            (p) => (!from || p.time >= from) && (!to || p.time <= to),
+          );
+          const latest = points.findLast((p) => p.value !== null);
+          if (!latest)
+            throw new AppError(
+              "SOURCE_UNAVAILABLE",
+              "所选区间没有有效 CPI 观测",
+            );
+          return {
+            providerId,
+            symbol,
+            points,
+            value: latest.value,
+            asOf: latest.time + "T00:00:00Z",
+            fetchedAt: new Date().toISOString(),
+            unit: "percent",
+            currency: "CNY",
+          };
+        };
       } else if (providerId === "fred") {
         const c = await credential(providerId);
         if (!c.key)
@@ -231,7 +259,11 @@ export async function fetchSample(
             409,
           );
         url = new URL("https://api.stlouisfed.org/fred/series/observations");
-        url.searchParams.set("series_id", symbol);
+        url.searchParams.set(
+          "series_id",
+          symbol === "CPIAUCNS:pc1" ? "CPIAUCNS" : symbol,
+        );
+        if (symbol === "CPIAUCNS:pc1") url.searchParams.set("units", "pc1");
         url.searchParams.set("api_key", c.key);
         url.searchParams.set("file_type", "json");
         url.searchParams.set(
@@ -380,6 +412,10 @@ export async function testConnection(id: string): Promise<Health> {
         symbol = "DFII10";
         op = "observations";
         interval = "1d";
+      } else if (id === "eastmoney_macro") {
+        symbol = "RPT_ECONOMY_CPI:NATIONAL_SAME";
+        op = "observations";
+        interval = "1mo";
       } else if (id === "frankfurter") {
         symbol = "USD/CNY";
         op = "observations";

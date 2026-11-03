@@ -181,7 +181,7 @@ export const statusLabel: Record<string, string> = {
   fresh: "已更新",
   latest: "已更新",
   ok: "已更新",
-  delayed: "日级 / 延迟",
+  delayed: "定期 / 延迟",
   stale: "数据陈旧",
   error: "读取失败",
   failed: "读取失败",

@@ -40,7 +40,15 @@ def main(argv=None):
         if series is None:
             raise CollectorError('unknown_series', 'Series is not enabled in the indicator catalog.')
         end = args.end or datetime.now(timezone.utc).date()
-        start = args.start or end - timedelta(days=365*3 + 1)
+        if args.start:
+            start = args.start
+        elif series.get('historyYears'):
+            try:
+                start = end.replace(year=end.year - series['historyYears'])
+            except ValueError:
+                start = end.replace(year=end.year - series['historyYears'], day=28)
+        else:
+            start = end - timedelta(days=365*3 + 1)
         if start > end:
             raise CollectorError('invalid_range', 'Start must be on or before end.')
         client = JsonClient()

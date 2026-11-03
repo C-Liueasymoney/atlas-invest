@@ -109,3 +109,7 @@ services/collector/.venv/bin/python -m pytest services/collector/tests -q
 进入 `/analytics/correlation`（导航“相关性与风险”）：选择历史资产、区间、日/周/月及CNY/USD，点击矩阵查看滚动窗口、散点和CSV；页面下方可保存多个模拟组合并设置单期假设冲击。利率使用bp变化，不作为债券价格；无历史的XAU及未接入债券ETF明确不可用。三个分析Widget可加入现有研究看板并保存配置。
 
 live先执行 `npm run db:migrate`（新增0004组合表）；其余启动及凭据配置沿用上文。计算、来源覆盖、FX和再平衡边界、API及后续历史风险接口见[分析模块说明](docs/ANALYTICS.md)。历史组合波动/回撤等仍为后续增强，不以单期情景替代。
+
+## 中美通胀变化
+
+指标目录搜索“通胀”可查看美国、中国的月度 CPI 同比率，支持自选和看板。图表工作台点击“比较中美通胀 · 近10年”，使用原始百分比共轴；支持1/3/5/10年或自定义1–100年。美国复用FRED Key，中国无需Key。详见 [数据口径与采集说明](docs/INFLATION.md)。

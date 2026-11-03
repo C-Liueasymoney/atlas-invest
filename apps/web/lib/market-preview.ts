@@ -100,6 +100,8 @@ export async function refreshPreview(seriesId?: string) {
         "FRED_DTWEXBGS",
         "FRED_NASDAQ100",
         "FRED_SP500",
+        "US_CPI_YOY_M",
+        "CN_CPI_YOY_M",
       ];
   const results: {
     seriesId: string;
@@ -206,8 +208,9 @@ export async function previewSeries(
         : "尚无已采集真实数据，请点击刷新数据"
       : !enabled
         ? "数据源或路由已停用，保留最近实际数据"
-        : (e?.lastError ??
-          "实际源数据 · 最近交易日/统计观察日，非盘中可成交报价"),
+        : (e?.lastError ?? s.frequency === "1mo")
+          ? "实际统计数据 · 按观察月份显示，非发布日期"
+          : "实际源数据 · 最近交易日/统计观察日，非盘中可成交报价",
   };
 }
 export async function previewQuote(

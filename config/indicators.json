@@ -304,5 +304,43 @@
     "description": "CFTC Legacy futures-only 非商业多头减空头，COMEX GOLD 088691，单位contracts；按报告观察日记录，可靠发布时间未知时为空。",
     "category": "gold",
     "enabled": true
+  },
+  {
+    "id": "US_CPI_YOY_M",
+    "nameZh": "美国 CPI 同比通胀率（月度）",
+    "providerId": "fred",
+    "providerSymbol": "CPIAUCNS:pc1",
+    "kind": "observation",
+    "frequency": "1mo",
+    "unit": "percent",
+    "currency": "USD",
+    "market": "US",
+    "priceDefinition": "cpi_yoy",
+    "timezone": "America/New_York",
+    "staleSeconds": 8035200,
+    "sourceUrl": "https://fred.stlouisfed.org/series/CPIAUCNS",
+    "description": "美国 CPI-U 全部项目、未季调；FRED pc1 = 相比上年同月百分比变化。月初表示观察月份，非发布日期。",
+    "category": "macro",
+    "enabled": true,
+    "historyYears": 100
+  },
+  {
+    "id": "CN_CPI_YOY_M",
+    "nameZh": "中国 CPI 同比通胀率（月度）",
+    "providerId": "eastmoney_macro",
+    "providerSymbol": "RPT_ECONOMY_CPI:NATIONAL_SAME",
+    "kind": "observation",
+    "frequency": "1mo",
+    "unit": "percent",
+    "currency": "CNY",
+    "market": "CN",
+    "priceDefinition": "cpi_yoy",
+    "timezone": "Asia/Shanghai",
+    "staleSeconds": 8035200,
+    "sourceUrl": "https://data.eastmoney.com/cjsj/cpi.html",
+    "description": "中国全国居民消费价格同比增长率；东方财富 NATIONAL_SAME，单位%。原始统计口径为全国，非城市/农村子项。月初表示观察月份，非发布日期。",
+    "category": "macro",
+    "enabled": true,
+    "historyYears": 100
   }
 ]

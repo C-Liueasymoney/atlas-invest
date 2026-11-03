@@ -203,3 +203,12 @@ Phase1提交867f7de、Phase2提交4585a91已分别成功推送origin/codex/atlas
 最终展示补充：矩阵两位小数、悬停完整数值、N/A与原因，概览精简为资产数量/有效对/最高正相关/最低相关；构建/lint/typecheck通过，定向3条浏览器通过。首轮生产回滚目录analytics-previous-20261101；显示微调回滚目录analytics-display-previous-20261101，日志/var/log/atlas-analytics-display-build.log。
 
 GitHub连接仍异常，普通HTTPS、HTTP/1.1重试分别报framing error、443超时与Empty reply。已通过GitHub连接器只读确认远端codex/atlas-v1停留4585a91；d329ee0、981b07c及随后显示修正本地提交保留，未强推、未重写历史。网络恢复后可正常git push origin codex/atlas-v1。
+
+## 2026-11-03 — 中美 CPI 同比通胀指标
+
+- 复用指标目录/自选/看板/比较图，新增美国 US_CPI_YOY_M（FRED CPIAUCNS:pc1）与中国 CN_CPI_YOY_M（东方财富 NATIONAL_SAME）。均为月度百分比，观察月以月初表示，不冒充发布日期；缺失、零与负值分别处理。
+- 新增 eastmoney_macro Provider，Node/Python统一口径；FRED受限变换映射使用官方 units=pc1。seed 注册新增元数据，不增加表迁移；preview、GitHub Actions和服务器 deploy/collect.sh纳入采集。
+- 初次请求最多100年内可用历史，后续Python增量同步；图表支持5/10年及自定义1–100年，比较页提供中美快捷选择与原始数值共轴。缺少FRED Key时比较页提示配置数据源。
+- 本地真实中国采集225个月，最新观察月2026-09，最新同比0.90%；自定义7年页面实测82个月。美国本地FRED Key缺失，返回not_configured；参数/归一化有测试，不声称真实美国认证采集通过。
+- typecheck、lint、生产build通过；Web 99 passed/8 skipped，Python 25 passed/11 skipped。跳过项主要为未配置的数据库集成与可选外网探测。新增测试覆盖原始百分比单位、缺失/零/负值、重复冲突、月日期、FRED pc1请求和闰日/月底区间。
+- 服务器47.101.193.94已尝试本机已有SSH密钥，认证失败（Permission denied）；当前机器无原Workbench配置，线上部署尚未执行，等待连接信息。回滚代码可保留新指标元数据/已采集数据，停用新指标即可停止采集。

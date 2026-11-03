@@ -1,4 +1,7 @@
 "use client";
+import { rangeFrom } from "../lib/chart-range";
+import { YearRange } from "./year-range";
+import Link from "next/link";
 import { useState } from "react";
 import { ChartCanvas, type ChartLine } from "./charts";
 import { Series, useRemote } from "./api";
@@ -27,10 +30,15 @@ export function CompareChart({
   from?: string;
   to?: string;
 }) {
+  const params = new URLSearchParams({
+    seriesIds: ids.join(","),
+    mode,
+    align: "intersection",
+  });
+  if (from) params.set("from", from);
+  if (to) params.set("to", to);
   const remote = useRemote<CompareData>(
-    ids.length > 1
-      ? `/api/v1/compare?seriesIds=${ids.join(",")}&mode=${mode}&align=intersection&from=${from}&to=${to}`
-      : null,
+    ids.length > 1 ? `/api/v1/compare?${params}` : null,
   );
   const data = remote.data;
   const lines: ChartLine[] =
@@ -63,12 +71,27 @@ export function CompareChart({
               ? "区间起点 = 100"
               : mode === "pct"
                 ? "相对区间起点变化 (%)"
-                : "原始观测值"}{" "}
+                : "原始观测值（通胀率单位：%）"}{" "}
             · 对齐：共同观察日期 · 未进行前向填充或日度插值
           </p>
         </>
       ) : (
-        <Empty>所选日期范围没有共同可用的观测点。请扩大区间或更换指标。</Empty>
+        <Empty>
+          {data?.series.some((s) => s.status === "not_configured") ? (
+            <>
+              <span>
+                {data.series
+                  .filter((s) => s.status === "not_configured")
+                  .map((s) => s.nameZh)
+                  .join("、")}{" "}
+                尚未配置数据源，配置并同步后即可比较。
+              </span>
+              <Link href="/settings/data-sources">配置数据源</Link>
+            </>
+          ) : (
+            "所选日期范围没有共同可用的观测点。请扩大区间或更换指标。"
+          )}
+        </Empty>
       )}
       <div className="chart-attribution">
         图表由{" "}
@@ -96,6 +119,16 @@ export function CompareWorkspace() {
       <div className="compare-layout">
         <aside className="panel compare-controls">
           <h2>研究序列</h2>
+          <button
+            onClick={() => {
+              setIds(["US_CPI_YOY_M", "CN_CPI_YOY_M"]);
+              setMode("raw");
+              setFrom(rangeFrom("10Y"));
+              setTo("");
+            }}
+          >
+            比较中美通胀 · 近10年
+          </button>
           <p className="muted small">选取 2–5 项指标，按实际观测日期对齐。</p>
           <ErrorNotice message={catalog.error} />
           {catalog.data?.items.map((s) => (
@@ -124,10 +157,39 @@ export function CompareWorkspace() {
           <label>
             比较方式
             <select value={mode} onChange={(e) => setMode(e.target.value)}>
+              <option value="raw">原始数值 · 相同单位共轴</option>
               <option value="index100">标准化 · 起点 = 100</option>
               <option value="pct">区间百分比变动</option>
             </select>
           </label>
+          <label>
+            近几年
+            <select
+              aria-label="比较年数"
+              defaultValue=""
+              onChange={(e) => {
+                if (e.target.value) {
+                  setFrom(rangeFrom(e.target.value));
+                  setTo("");
+                }
+              }}
+            >
+              <option value="" disabled>
+                选择年数
+              </option>
+              {[1, 3, 5, 10].map((n) => (
+                <option key={n} value={`${n}Y`}>
+                  {n}年
+                </option>
+              ))}
+            </select>
+          </label>
+          <YearRange
+            onChange={(range) => {
+              setFrom(rangeFrom(range));
+              setTo("");
+            }}
+          />
           <label>
             开始日期
             <input
@@ -156,7 +218,9 @@ export function CompareWorkspace() {
           <div className="panel-heading">
             <div>
               <h2>跨指标比较</h2>
-              <p>{ids.length} 项序列 · 日度观察点 · Asia/Shanghai</p>
+              <p>
+                {ids.length} 项序列 · 按实际观察月份/日期对齐 · Asia/Shanghai
+              </p>
             </div>
           </div>
           <CompareChart ids={ids} mode={mode} from={from} to={to} />

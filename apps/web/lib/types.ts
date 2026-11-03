@@ -13,6 +13,7 @@ export interface Series {
   priceDefinition: string;
   timezone: string;
   staleSeconds: number;
+  historyYears?: number;
   sourceUrl: string;
   description: string;
   category: string;

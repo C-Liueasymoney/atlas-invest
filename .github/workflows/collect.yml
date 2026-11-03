@@ -37,7 +37,7 @@ jobs:
           import json, os, subprocess, sys
           if not os.environ.get('DATABASE_URL'):
               sys.exit('Configure DATABASE_URL repository secret after applying migrations and catalog seed.')
-          supported = {'akshare_sge', 'frankfurter', 'gold_api', 'fred', 'cftc'}
+          supported = {'akshare_sge', 'frankfurter', 'gold_api', 'fred', 'cftc', 'eastmoney_macro'}
           catalog = json.load(open('config/indicators.json'))
           wanted = os.environ.get('REQUESTED_SERIES', '').strip()
           jobs = [s for s in catalog if s['providerId'] in supported and s.get('enabled', True) and (not wanted or s['id'] == wanted) and (s['providerId'] != 'cftc' or wanted == s['id'])]

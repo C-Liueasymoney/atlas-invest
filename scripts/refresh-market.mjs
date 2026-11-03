@@ -29,6 +29,8 @@ const defaults = [
   "FRED_DTWEXBGS",
   "FRED_NASDAQ100",
   "FRED_SP500",
+  "US_CPI_YOY_M",
+  "CN_CPI_YOY_M",
 ];
 const specified = process.argv.indexOf("--series");
 const ids = specified >= 0 ? [process.argv[specified + 1]] : defaults;
@@ -38,9 +40,14 @@ if (
       !catalog.some(
         (s) =>
           s.id === id &&
-          ["akshare_sge", "gold_api", "frankfurter", "fred", "cftc"].includes(
-            s.providerId,
-          ),
+          [
+            "akshare_sge",
+            "gold_api",
+            "frankfurter",
+            "fred",
+            "cftc",
+            "eastmoney_macro",
+          ].includes(s.providerId),
       ),
   )
 )
@@ -161,7 +168,26 @@ for (const id of ids) {
           (existsSync(local) ? local : "python3");
         const { stdout } = await promisify(execFile)(
           python,
-          ["-m", "atlas_collector", "sync", "--series", id, "--probe"],
+          [
+            "-m",
+            "atlas_collector",
+            "sync",
+            "--series",
+            id,
+            "--probe",
+            ...(s.historyYears
+              ? [
+                  "--start",
+                  new Date(
+                    new Date().setUTCFullYear(
+                      new Date().getUTCFullYear() - s.historyYears,
+                    ),
+                  )
+                    .toISOString()
+                    .slice(0, 10),
+                ]
+              : []),
+          ],
           {
             cwd: root,
             env: {

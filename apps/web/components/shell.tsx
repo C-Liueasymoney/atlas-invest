@@ -134,7 +134,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           {session.data?.mode === "preview" && (
             <div className="preview-banner">
               <span className="market-state-dot" />
-              真实数据预览 · 最近成功采集<span>日级数据，非实时行情</span>
+              真实数据预览 · 最近成功采集<span>按来源频率更新，非实时行情</span>
             </div>
           )}
           {session.data?.mode === "demo" && (
@@ -150,7 +150,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         </main>
         <footer className="footer">
           <span>Atlas Invest · 个人投资研究</span>
-          <span>Asia/Shanghai · 日级参考数据，仅供研究</span>
+          <span>Asia/Shanghai · 参考数据，仅供研究</span>
         </footer>
       </div>
       {search && (

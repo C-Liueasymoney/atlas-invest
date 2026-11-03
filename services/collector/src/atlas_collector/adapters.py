@@ -108,6 +108,11 @@ def normalize_sge_quote(payload, fetched_at):
 def fetch(series, start, end, client=None, credential_connection=None):
     client = client or JsonClient()
     provider, symbol = series['providerId'], series['providerSymbol']
+    if provider == 'eastmoney_macro':
+        if symbol != 'RPT_ECONOMY_CPI:NATIONAL_SAME':
+            raise CollectorError('unsupported', 'Only nationwide CPI year-on-year is supported.')
+        from .inflation import fetch_china_cpi
+        return fetch_china_cpi(client, start, end)
     if provider == 'cftc':
         if symbol != '088691':
             raise CollectorError('unsupported', 'Only the verified COMEX Gold contract 088691 is supported.')
@@ -119,7 +124,7 @@ def fetch(series, start, end, client=None, credential_connection=None):
             raise MissingProviderCredential()
         records, offset = [], 0
         while True:
-            payload = client.get('https://api.stlouisfed.org/fred/series/observations', {'series_id': symbol, 'api_key': key, 'file_type': 'json', 'observation_start': start.isoformat(), 'observation_end': end.isoformat(), 'sort_order': 'asc', 'limit': 100000, 'offset': offset})
+            payload = client.get('https://api.stlouisfed.org/fred/series/observations', {**({'units': 'pc1'} if symbol == 'CPIAUCNS:pc1' else {}), 'series_id': 'CPIAUCNS' if symbol == 'CPIAUCNS:pc1' else symbol, 'api_key': key, 'file_type': 'json', 'observation_start': start.isoformat(), 'observation_end': end.isoformat(), 'sort_order': 'asc', 'limit': 100000, 'offset': offset})
             page = normalize_fred(payload)
             records.extend(page)
             offset += len(page)
