@@ -15,7 +15,7 @@ jobs:
             POSTGRES_DB: atlas_test,
           }
         ports: ["5432:5432"]
-        options: --health-cmd='pg_isready -U atlas' --health-interval=5s --health-retries=10
+        options: --health-cmd "pg_isready -U atlas" --health-interval=5s --health-retries=10
     env:
       DATABASE_URL: postgresql://atlas:atlas_ci@127.0.0.1:5432/atlas_test
       TEST_DATABASE_URL: postgresql://atlas:atlas_ci@127.0.0.1:5432/atlas_test
@@ -30,6 +30,16 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run lint && npm run typecheck && npm test && npm run build
       - run: npm run test:e2e
+      - run: npm run agent:build && node scripts/package-linux-runtime.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: atlas-linux-runtime-${{ github.sha }}
+          path: |
+            .atlas/release/atlas-linux-runtime.tgz
+            .atlas/release/atlas-linux-runtime.sha256
+          include-hidden-files: true
+          retention-days: 3
+          if-no-files-found: error
   collector:
     runs-on: ubuntu-latest
     services:
@@ -42,7 +52,7 @@ jobs:
             POSTGRES_DB: atlas_test,
           }
         ports: ["5432:5432"]
-        options: --health-cmd='pg_isready -U atlas' --health-interval=5s --health-retries=10
+        options: --health-cmd "pg_isready -U atlas" --health-interval=5s --health-retries=10
     env:
       TEST_DATABASE_URL: postgresql://atlas:atlas_ci@127.0.0.1:5432/atlas_test
     steps:

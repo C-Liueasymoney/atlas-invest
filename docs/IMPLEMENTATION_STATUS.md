@@ -234,3 +234,10 @@ GitHub连接仍异常，普通HTTPS、HTTP/1.1重试分别报framing error、443
 - 按用户要求删除Atlas连接页的密码框及密码校验；POST同意改用既有HMAC签名owner会话。没有有效会话时进入原有网站登录，成功后回到同一pending请求。首次连接保留明确的客户端/权限说明与连接按钮，避免匿名调用者自行获授权。
 - 登录接口仅接受服务器配置的MCP origin下精确consent路径/有效request作为回跳，拒绝外站、脚本URL、无关参数/路径和无效请求；一般网站登录响应与默认Dashboard入口保持兼容。
 - 真实浏览器测试先证明旧实现仍有密码框，再验证新实现无需重复输入；覆盖缺失/过期会话、跨站拒绝、PKCE和登录回跳白名单。独立运行包同时验证共享SESSION_SECRET配置，不创建公开免认证研究接口。本地lint/typecheck/production build、MCP构建/运行包检查通过；真实PG全量139通过、3条件跳过。生产发布结果见本轮部署记录。
+
+
+### 2026-11-07 — 小内存实例恢复与外部构建
+
+- 8ebe731服务器隔离构建期间再次出现公网与Workbench整体超时，新版本未切换；停止构建命令亦超时。控制台查询实例仍Running，备用ecs:RunCommand返回Forbidden.RAM，已请求用户通过控制台重启实例或补充云助手权限。此前26d4653为已验证运行版本，旧构建、源码和加密数据库备份均保留。
+- 改为GitHub Linux CI产物部署，不再在该2GB实例执行Next构建。检查远端CI发现原有PostgreSQL容器health-cmd单引号被Runner参数解析器拆开，产生unknown shorthand flag U，尚未进入代码检查；修正为双引号。
+- Web完整检查通过后打包已提交源码、Linux Next standalone及纯Node MCP/迁移工具，排除本地状态/真实.env，附commit与SHA256并上传限期artifact。构建与部署运行状态以GitHub及恢复后的服务器实测为准，不把本地测试冒充远端CI通过。
