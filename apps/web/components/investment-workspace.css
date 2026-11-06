@@ -1,0 +1,119 @@
+.investment-workspace {
+  max-width: 1160px;
+  margin: auto;
+  min-width: 0;
+}
+.investment-card {
+  padding: 24px;
+  margin: 18px 0;
+  overflow-wrap: anywhere;
+}
+.investment-card h2 {
+  margin: 0 0 16px;
+}
+.investment-card p {
+  line-height: 1.7;
+}
+.investment-card article {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border, #ddd);
+}
+.investment-card article:last-child {
+  border-bottom: 0;
+}
+.investment-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.investment-fields label,
+.investment-card form > label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.investment-card input:not([type="checkbox"]),
+.investment-card select,
+.investment-card textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--border, #ccc);
+  border-radius: 6px;
+  background: var(--surface, #fff);
+  color: inherit;
+}
+.investment-card textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+.investment-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+.investment-actions h2 {
+  margin: 0 auto 0 0;
+}
+.investment-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 16px;
+}
+.investment-error {
+  padding: 12px;
+  background: #fee2e2;
+  color: #991b1b;
+  border-radius: 6px;
+}
+.investment-warning {
+  padding: 12px;
+  background: #fef3c7;
+  color: #92400e;
+  border-radius: 6px;
+}
+.investment-card .investment-prompt {
+  min-height: 220px;
+}
+.investment-card pre {
+  white-space: pre-wrap;
+  max-height: 420px;
+  overflow: auto;
+  font-size: 12px;
+}
+.investment-source-refs {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.investment-card details {
+  margin: 14px 0;
+}
+.investment-card fieldset {
+  padding: 12px;
+  margin: 12px 0;
+}
+.investment-card ul {
+  padding-left: 22px;
+}
+.investment-card li {
+  margin: 10px 0;
+  line-height: 1.6;
+}
+@media (max-width: 680px) {
+  .investment-fields {
+    grid-template-columns: 1fr;
+  }
+  .investment-card {
+    padding: 16px;
+  }
+  .investment-actions button {
+    min-height: 42px;
+  }
+  .investment-card h2 {
+    font-size: 19px;
+  }
+}

@@ -20,7 +20,8 @@ const links = [
   { href: "/indicators", title: "指标" },
   { href: "/watchlists", title: "自选" },
   { href: "/alerts", title: "预警" },
-  { href: "/research", title: "研究" },
+  { href: "/investments", title: "持仓研究" },
+  { href: "/research", title: "笔记" },
   { href: "/settings/data-sources", title: "数据源配置" },
 ];
 export function Shell({ children }: { children: React.ReactNode }) {

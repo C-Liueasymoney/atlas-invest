@@ -18,7 +18,10 @@
     "setup:local": "node scripts/setup.mjs",
     "format": "prettier --write \"apps/web/**/*.{ts,tsx,css,mjs}\" \"scripts/*.mjs\"",
     "format:check": "prettier --check \"apps/web/**/*.{ts,tsx,css,mjs}\" \"scripts/*.mjs\"",
-    "data:refresh": "node --env-file-if-exists=.env scripts/refresh-market.mjs"
+    "data:refresh": "node --env-file-if-exists=.env scripts/refresh-market.mjs",
+    "agent:start": "node --env-file-if-exists=.env scripts/agent-server.mjs",
+    "agent:connect": "node --env-file-if-exists=.env scripts/connect-agent.mjs",
+    "agent:package": "node --env-file-if-exists=.env scripts/package-agent-plugin.mjs"
   },
   "engines": {
     "node": ">=22.0.0"

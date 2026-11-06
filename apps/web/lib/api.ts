@@ -1,3 +1,4 @@
+import { investmentApi } from "./investment/api";
 import { inflationSummary } from "./inflation-summary";
 import { portfolioApi } from "./analytics/portfolio-api";
 import { analyticsApi } from "./analytics/api";
@@ -92,6 +93,8 @@ export async function dispatch(
       });
     }
     authorize(request);
+    const investment = await investmentApi(request, p);
+    if (investment) return investment;
     const portfolio = await portfolioApi(request, p, url);
     if (portfolio) return portfolio;
     const analytics = await analyticsApi(request, p, url);

@@ -1,0 +1,23 @@
+[Unit]
+Description=Atlas Invest authorized research MCP
+After=network-online.target postgresql.service
+[Service]
+Type=simple
+User=atlas
+Group=atlas
+WorkingDirectory=/opt/atlas-invest
+EnvironmentFile=/opt/atlas-invest/deploy/.env
+Environment=NODE_ENV=production
+Environment=DATA_MODE=live
+Environment=ATLAS_PROJECT_ROOT=/opt/atlas-invest
+ExecStart=/usr/bin/node --import tsx apps/web/lib/agent/start.ts
+Restart=on-failure
+RestartSec=5
+MemoryMax=256M
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+UMask=0077
+[Install]
+WantedBy=multi-user.target

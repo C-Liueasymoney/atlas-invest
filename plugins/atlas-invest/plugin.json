@@ -1,0 +1,7 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "atlas-invest",
+  "version": "0.1.0",
+  "description": "读取 Atlas 投资研究任务，并将有来源的分析与复盘保存到个人工作台。",
+  "author": { "name": "Atlas Invest" }
+}
