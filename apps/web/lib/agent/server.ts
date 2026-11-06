@@ -111,6 +111,10 @@ export function createAgentApp(
     try {
       const request = String(req.query.request || "");
       const { grant, client } = await provider.pending(request);
+      // A native form under no-referrer sends Origin:null. Keep only the
+      // origin as referrer so the strict same-origin consent check can work
+      // without disclosing the pending authorization query string.
+      res.setHeader("Referrer-Policy", "strict-origin");
       res.setHeader(
         "Content-Security-Policy",
         "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'",

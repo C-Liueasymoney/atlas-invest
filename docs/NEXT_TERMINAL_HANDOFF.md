@@ -1,6 +1,8 @@
 # 另一终端继续：部署与 Atlas 私人插件接入
 
-更新时间：2026-11-06。用户已要求本终端停止部署与账号接入，完成开发并推送 GitHub；不要把当前状态理解成已经上线。
+更新时间：2026-11-06。接续终端已完成正式部署与公网 MCP 读写验证，具体见 [本次部署记录](DEPLOYMENT_2026-11-06.md)。
+
+以下“服务器现状”和安装失败为**本次接续之前的交接历史**，不能当作当前运行状态。当前运行 b6d6464；已启用 atlas-agent，迁移0005/0006已完成。账户侧授权状态以本次部署记录为准。
 
 ## 获取代码
 
@@ -54,7 +56,7 @@ git pull --ff-only
 先检查公网 `/agent/health` 与 `/.well-known/oauth-protected-resource/mcp`。无令牌调用 `/mcp` 应为401。
 
 ```sh
-codex mcp add atlas-invest --url https://47.101.193.94/mcp --oauth-client-registration dcr
+codex mcp add atlas-invest --url https://47.101.193.94/mcp
 codex mcp login atlas-invest --scopes research:read,research:submit,offline_access
 ```
 

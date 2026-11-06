@@ -104,12 +104,12 @@ npm run agent:connect
 
 ## 当前远程接入状态
 
-用户最终要求本终端停止部署和账号接入，开发完成后推送GitHub。接续说明、服务器实际变更、备份、已知安装失败及另一终端完整接入步骤见 [另一终端交接文档](NEXT_TERMINAL_HANDOFF.md)。
+2026-11-06接续终端已将 GitHub 功能分支 b6d6464 部署到正式实例，网站入口为 https://47.101.193.94/investments ，MCP 为 https://47.101.193.94/mcp 。
 
-本次已通过用户登录的Workbench上传源码并备份。服务器npm安装先遇内部镜像不可达，改用官方仓库后又被2GB实例OOM终止；384MB堆限制也未成功。脚本未进入新构建/迁移/服务切换。源码已复制、root node_modules可能不完整，旧standalone运行产物未被替换；不能把状态写成完全没有改动或已经上线。
+采用隔离的 Linux 构建目录、已有 Linux 依赖与新增依赖包，限制CPU/内存；旧网站在构建期间保持运行。纯Node MCP产物以独立 atlas-agent 服务运行，未在2GB实例重跑完整 npm ci。
 
-MCP公网部署与ChatGPT账户私人插件均未完成。用户可在另一终端按交接文档继续。网站不需要大模型API Key。
+迁移0005/0006、Catalog元数据seed与中美通胀历史同步已完成。正式公网 OAuth DCR+PKCE、三个工具、任务读取、结果写回、幂等回执与网页读回已实测通过；技术验收临时持仓/任务/结果/授权均已清理。原有HTTPS、登录、CSRF与行情检查通过。
 
-附加构建命令：`npm run agent:build` 产出纯Node MCP/迁移工具，`npm run agent:verify-runtime` 验证运行产物；已在本机验证。生产网站应在Linux环境构建，再部署standalone，避免在2GB运行服务器重复安装全部开发依赖。
+账户私人插件及本机 Codex 的授权进度、备份和回滚路径见 [本次部署记录](DEPLOYMENT_2026-11-06.md)。生成本地插件包不代表账户安装完成，账户状态必须分别核实。
 
 公开npm审计返回10项moderate，来自已有eslint-config-next/minimatch和ExcelJS/uuid依赖链；本轮新增MCP运行SDK未出现在报告中。未执行会降级主依赖的force修复；记录留待独立依赖升级处理。

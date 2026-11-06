@@ -220,3 +220,10 @@ GitHub连接仍异常，普通HTTPS、HTTP/1.1重试分别报framing error、443
 - 新增既有鉴权下summary接口；未知指标拒绝。缺失环比/月份、重复、单点和无效因子返回不可计算；零和通缩正常处理。新增两条基础序列纳入seed、preview和服务器定时采集；同步同比时同时同步基础数据。
 - 真实中国源各225条同比/环比；近7年实际2019-11至2026-09、82个月，累计估算4.82%、复合年化0.69%、期初1万元对应期末10482.11元；同额现金购买力约下降4.60%。页面已验证统计卡片和原同比曲线同时完整展示。
 - 最终typecheck、lint、production build通过；Web 107 passed/8 skipped，Python 26 passed/11 skipped（本机未配置数据库集成等可选条件）。美国本地FRED Key缺失，未声称真实认证采集已通过。无新增依赖或新表迁移，部署需seed新增元数据后同步基础序列。
+
+## 2026-11-06/07 — 研究工作台正式部署与 OAuth 浏览器修复
+
+- 从GitHub拉取并跟踪codex/agent-research-workspace的b6d6464，读取共享对话及交接；服务器旧网站在隔离Linux构建期间正常运行，未重复执行失败的全量npm ci。Linux SWC、webpack生产构建与纯Node MCP产物验证后，备份并完成0005/0006、Catalog seed、Nginx OAuth/MCP路由与atlas-agent systemd上线。
+- 正式公网真实数据库验证：OAuth DCR+PKCE、三个MCP工具、任务读取、结果写回、重复提交回执、网站读回均通过；只清理本次验收临时数据与授权。HTTPS/登录/CSRF/原行情回归通过，3000/3001/5432仅loopback，采集任务退出0。中美CPI四序列已真实回填，CN各225、US各1199条，截至2026-09。
+- 实际浏览器暴露no-referrer使表单Origin变null的问题。新增真实Chromium回归先失败，再仅将同意页改为strict-origin；保留同源/CSRF/PKCE及令牌保护。完整测试137通过、3条件跳过；lint/typecheck/production build、独立MCP构建通过，390px研究流程通过。已发布修正MCP产物。
+- 本机Codex官方CLI已成功OAuth登录，不在提示词或Git存放密码/令牌。ChatGPT账户私人插件按实际注册结果单独记录，不能与本机MCP配置混淆。部署、证据、备份/回滚及客户端命令见docs/DEPLOYMENT_2026-11-06.md。

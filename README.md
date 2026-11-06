@@ -87,9 +87,9 @@ FRED命令将同一Key复用于`FRED_NASDAQ100`、`FRED_SP500`、`FRED_DFII10`�
 ```sh
 npm run lint
 npm run typecheck
+npx playwright install chromium
 npm test
 npm run build
-npx playwright install chromium
 npm run test:e2e
 services/collector/.venv/bin/python -m pytest services/collector/tests -q
 ```
