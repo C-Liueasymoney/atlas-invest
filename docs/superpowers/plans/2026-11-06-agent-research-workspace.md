@@ -45,3 +45,7 @@
 - Final review: reported P2 fixed with regression tests and scoped re-review clean.
 - Full suite: 136 passed, 3 skipped; lint/typecheck/build passed.
 - Deployment: user provided Aliyun console; IAB Workbench connected; source release transfer next.
+
+- Deployment attempted through authorized IAB Workbench; source+encrypted backups made, source copied, install failed due private registry then OOM. No migrations/service switch reached.
+- User explicitly deferred deployment and account plugin setup; development/push is current completion scope. Detailed state: docs/NEXT_TERMINAL_HANDOFF.md.
+- Added and verified pure Node MCP runtime bundling; do not claim full Linux website artifacts deployed.

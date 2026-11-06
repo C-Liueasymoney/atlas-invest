@@ -104,4 +104,12 @@ npm run agent:connect
 
 ## 当前远程接入状态
 
-代码与部署配置已提供。当前电脑没有部署文档所述Workbench工具；用现有SSH身份访问文档记载的服务器得到 `Permission denied (publickey,password)`，未获得部署权限。因此尚未修改线上服务，也没有声称已经创建ChatGPT账户中的私人连接。需要先恢复可用的服务器访问；用户首次账户安装/授权可能仍需在相应客户端完成。
+用户最终要求本终端停止部署和账号接入，开发完成后推送GitHub。接续说明、服务器实际变更、备份、已知安装失败及另一终端完整接入步骤见 [另一终端交接文档](NEXT_TERMINAL_HANDOFF.md)。
+
+本次已通过用户登录的Workbench上传源码并备份。服务器npm安装先遇内部镜像不可达，改用官方仓库后又被2GB实例OOM终止；384MB堆限制也未成功。脚本未进入新构建/迁移/服务切换。源码已复制、root node_modules可能不完整，旧standalone运行产物未被替换；不能把状态写成完全没有改动或已经上线。
+
+MCP公网部署与ChatGPT账户私人插件均未完成。用户可在另一终端按交接文档继续。网站不需要大模型API Key。
+
+附加构建命令：`npm run agent:build` 产出纯Node MCP/迁移工具，`npm run agent:verify-runtime` 验证运行产物；已在本机验证。生产网站应在Linux环境构建，再部署standalone，避免在2GB运行服务器重复安装全部开发依赖。
+
+公开npm审计返回10项moderate，来自已有eslint-config-next/minimatch和ExcelJS/uuid依赖链；本轮新增MCP运行SDK未出现在报告中。未执行会降级主依赖的force修复；记录留待独立依赖升级处理。

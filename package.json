@@ -21,7 +21,9 @@
     "data:refresh": "node --env-file-if-exists=.env scripts/refresh-market.mjs",
     "agent:start": "node --env-file-if-exists=.env scripts/agent-server.mjs",
     "agent:connect": "node --env-file-if-exists=.env scripts/connect-agent.mjs",
-    "agent:package": "node --env-file-if-exists=.env scripts/package-agent-plugin.mjs"
+    "agent:package": "node --env-file-if-exists=.env scripts/package-agent-plugin.mjs",
+    "agent:build": "node scripts/build-agent-runtime.mjs",
+    "agent:verify-runtime": "node scripts/verify-agent-runtime.mjs"
   },
   "engines": {
     "node": ">=22.0.0"
