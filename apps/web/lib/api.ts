@@ -1,3 +1,4 @@
+import { oauthLoginReturnTo } from "./auth/return-to";
 import { investmentApi } from "./investment/api";
 import { inflationSummary } from "./inflation-summary";
 import { portfolioApi } from "./analytics/portfolio-api";
@@ -49,14 +50,23 @@ export async function dispatch(
           429,
         );
       const d = parse(
-        z.object({ password: z.string().max(512) }),
+        z.object({
+          password: z.string().max(512),
+          returnTo: z.string().max(2048).optional(),
+        }),
         await body(request),
       );
       if (!passwordMatches(d.password, process.env.OWNER_PASSWORD || "")) {
         loginAttempts.push(Date.now());
         throw new AppError("UNAUTHORIZED", "密码错误", 401);
       }
-      const r = json({ authenticated: true });
+      const r = json({
+        authenticated: true,
+        returnTo: oauthLoginReturnTo(
+          d.returnTo,
+          process.env.ATLAS_AGENT_PUBLIC_URL,
+        ),
+      });
       r.headers.set(
         "Set-Cookie",
         `atlas_session=${signSession(process.env.SESSION_SECRET!)}; HttpOnly; SameSite=Strict; Path=/; Max-Age=86400${process.env.NODE_ENV === "production" ? "; Secure" : ""}`,

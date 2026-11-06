@@ -14,7 +14,7 @@ import {
 } from "@modelcontextprotocol/sdk/server/auth/router.js";
 import { requireBearerAuth } from "@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js";
 import { AtlasOAuthProvider, scopes } from "./oauth";
-import { passwordMatches, assertRuntime } from "../auth/session";
+import { verifySession, assertRuntime } from "../auth/session";
 import { AppError } from "../errors";
 import {
   researchToolDefinitions,
@@ -51,6 +51,8 @@ export function createAgentApp(
     throw new Error(
       "ATLAS_AGENT_PUBLIC_URL must be a canonical HTTPS origin (loopback HTTP only in development)",
     );
+  if ((process.env.SESSION_SECRET?.length || 0) < 32)
+    throw new Error("MCP requires the website session signing secret");
   const app = express();
   app.use(hostHeaderValidation([publicUrl.hostname, "127.0.0.1", "localhost"]));
   app.use((req, res, next) => {
@@ -122,7 +124,7 @@ export function createAgentApp(
       res
         .type("html")
         .send(
-          `<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>连接 Atlas Invest</title><style>body{font:16px system-ui;max-width:560px;margin:60px auto;padding:24px;line-height:1.7;background:#fafafa;color:#182221}input,button{font:inherit;padding:12px;width:100%;box-sizing:border-box;margin:12px 0}code{overflow-wrap:anywhere}</style><h1>连接 Atlas Invest</h1><p>授权 <strong>${escape(client.client_name || "AI 客户端")}</strong> 读取你创建的研究任务并保存任务允许的分析结果。</p><p>回调地址：<code>${escape(grant.redirectUri!)}</code></p><p>权限：${escape(grant.scopes.join("、"))}</p><form method="post" action="/agent/consent"><input type="hidden" name="request" value="${escape(request)}"><label>个人工作台密码<input type="password" name="password" autocomplete="current-password" required maxlength="512"></label><button type="submit">授权连接</button></form><p>不授权可直接关闭此页面。此连接不能修改行情、数据源凭据或原始投资判断。</p></html>`,
+          `<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>连接 Atlas Invest</title><style>body{font:16px system-ui;max-width:560px;margin:60px auto;padding:24px;line-height:1.7;background:#fafafa;color:#182221}input,button{font:inherit;padding:12px;width:100%;box-sizing:border-box;margin:12px 0}code{overflow-wrap:anywhere}</style><h1>连接 Atlas Invest</h1><p>授权 <strong>${escape(client.client_name || "AI 客户端")}</strong> 读取你创建的研究任务并保存任务允许的分析结果。</p><p>回调地址：<code>${escape(grant.redirectUri!)}</code></p><p>权限：${escape(grant.scopes.join("、"))}</p><p>使用现有工作台登录会话连接，无需再次输入密码。</p><form method="post" action="/agent/consent"><input type="hidden" name="request" value="${escape(request)}"><button type="submit">连接</button></form><p>不授权可直接关闭此页面。此连接不能修改行情、数据源凭据或原始投资判断。</p></html>`,
         );
     } catch {
       res.status(400).send("授权请求无效或已过期，请从 AI 客户端重新连接。");
@@ -136,12 +138,20 @@ export function createAgentApp(
       res.status(403).json({ error: "invalid_request" });
       return;
     }
-    if (
-      typeof req.body.password !== "string" ||
-      req.body.password.length > 512 ||
-      !passwordMatches(req.body.password, process.env.OWNER_PASSWORD || "")
-    ) {
-      res.status(401).send("密码错误，请返回重试。");
+    const session = req.headers.cookie?.match(
+      /(?:^|;\s*)atlas_session=([^;]+)/,
+    )?.[1];
+    if (!session || !verifySession(session, process.env.SESSION_SECRET!)) {
+      // Sign in once through the existing website, then return to this exact
+      // pending request. The login API validates the destination before use.
+      const pending = new URL("/agent/consent", publicUrl);
+      pending.searchParams.set("request", String(req.body.request || ""));
+      const login = new URL(
+        "/login",
+        process.env.ATLAS_PUBLIC_BASE_URL || publicUrl,
+      );
+      login.searchParams.set("next", pending.href);
+      res.redirect(303, login.href);
       return;
     }
     try {

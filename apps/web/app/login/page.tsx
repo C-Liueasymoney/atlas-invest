@@ -19,8 +19,23 @@ export default function Login() {
           onSubmit={(e) => {
             e.preventDefault();
             void action.run(async () => {
-              await api("/api/auth/login", json("POST", { password }));
+              const result = await api<{
+                authenticated: boolean;
+                returnTo?: string;
+              }>(
+                "/api/auth/login",
+                json("POST", {
+                  password,
+                  returnTo:
+                    new URLSearchParams(window.location.search).get("next") ||
+                    undefined,
+                }),
+              );
               setPassword("");
+              if (result.returnTo) {
+                window.location.replace(result.returnTo);
+                return;
+              }
               router.push("/dashboard");
               router.refresh();
             }, "登录成功");

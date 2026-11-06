@@ -227,3 +227,10 @@ GitHub连接仍异常，普通HTTPS、HTTP/1.1重试分别报framing error、443
 - 正式公网真实数据库验证：OAuth DCR+PKCE、三个MCP工具、任务读取、结果写回、重复提交回执、网站读回均通过；只清理本次验收临时数据与授权。HTTPS/登录/CSRF/原行情回归通过，3000/3001/5432仅loopback，采集任务退出0。中美CPI四序列已真实回填，CN各225、US各1199条，截至2026-09。
 - 实际浏览器暴露no-referrer使表单Origin变null的问题。新增真实Chromium回归先失败，再仅将同意页改为strict-origin；保留同源/CSRF/PKCE及令牌保护。完整测试137通过、3条件跳过；lint/typecheck/production build、独立MCP构建通过，390px研究流程通过。已发布修正MCP产物。
 - 本机Codex官方CLI已成功OAuth登录，不在提示词或Git存放密码/令牌。ChatGPT账户私人插件按实际注册结果单独记录，不能与本机MCP配置混淆。部署、证据、备份/回滚及客户端命令见docs/DEPLOYMENT_2026-11-06.md。
+
+
+## 2026-11-07 — MCP复用网站登录，不再重复输入密码
+
+- 按用户要求删除Atlas连接页的密码框及密码校验；POST同意改用既有HMAC签名owner会话。没有有效会话时进入原有网站登录，成功后回到同一pending请求。首次连接保留明确的客户端/权限说明与连接按钮，避免匿名调用者自行获授权。
+- 登录接口仅接受服务器配置的MCP origin下精确consent路径/有效request作为回跳，拒绝外站、脚本URL、无关参数/路径和无效请求；一般网站登录响应与默认Dashboard入口保持兼容。
+- 真实浏览器测试先证明旧实现仍有密码框，再验证新实现无需重复输入；覆盖缺失/过期会话、跨站拒绝、PKCE和登录回跳白名单。独立运行包同时验证共享SESSION_SECRET配置，不创建公开免认证研究接口。本地lint/typecheck/production build、MCP构建/运行包检查通过；真实PG全量139通过、3条件跳过。生产发布结果见本轮部署记录。

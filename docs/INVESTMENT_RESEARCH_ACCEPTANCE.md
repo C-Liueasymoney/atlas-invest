@@ -65,9 +65,9 @@ ATLAS_AGENT_PORT=3001
 2. 在现有Nginx HTTPS server块中include `deploy/agent-nginx.conf`。它将 `/mcp`、OAuth元数据/授权/令牌/注册/撤销及同意页路由到3001。OAuth的Origin必须保持真实公网值，不能使用网页API的私网Origin改写。
 3. 检查 `nginx -t` 后再reload；重启网站与MCP，验证公网 `/agent/health`、`/.well-known/oauth-protected-resource/mcp` 和OAuth元数据。
 4. 无令牌请求 `/mcp` 应返回401；禁止将不需要鉴权的示例配置用于真实持仓。
-5. 验证实际浏览器授权与AI调用，再声明该客户端接入完成。
+5. 验证实际浏览器会话连接与AI调用，再声明该客户端接入完成。
 
-OAuth由官方MCP SDK提供协议路由与PKCE验证；应用实现owner同意、客户端/授权码/令牌持久化、资源和scope校验、刷新轮换与撤销。授权码一次使用，两分钟到期；access token一小时；请求offline_access时refresh token最长30天。令牌不会进入研究指令，access/refresh只存散列。
+OAuth由官方MCP SDK提供协议路由与PKCE验证；owner同意复用网站签名会话（不再次校验密码），应用实现、客户端/授权码/令牌持久化、资源和scope校验、刷新轮换与撤销。授权码一次使用，两分钟到期；access token一小时；请求offline_access时refresh token最长30天。令牌不会进入研究指令，access/refresh只存散列。
 
 ## 连接 Codex 与 ChatGPT Work
 
@@ -79,7 +79,7 @@ OAuth由官方MCP SDK提供协议路由与PKCE验证；应用实现owner同意�
 npm run agent:connect
 ```
 
-脚本先验证公网健康检查，然后调用官方 `codex mcp add` 与 `codex mcp login`。浏览器出现Atlas同意页后，输入个人工作台密码并授权。新会话可使用三个工具。不同本地运行环境可能需要各自接入；本地配置不等于所有电脑自动同步。
+脚本先验证公网健康检查，然后调用官方 `codex mcp add` 与 `codex mcp login`。浏览器出现Atlas连接页后，复用网站已登录会话点击连接，不再重复输入密码；尚未登录时进入原有网站登录页，登录后回到这次连接。新会话可使用三个工具。不同本地运行环境可能需要各自接入；本地配置不等于所有电脑自动同步。
 
 ### ChatGPT Work与移动端
 

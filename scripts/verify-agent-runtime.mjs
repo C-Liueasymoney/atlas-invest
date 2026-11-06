@@ -21,6 +21,7 @@ const child = spawn(
       NODE_ENV: "development",
       DATA_MODE: "demo",
       OWNER_PASSWORD: "runtime-verification-only-password",
+      SESSION_SECRET: "runtime-verification-session-secret-long-enough",
       ATLAS_AGENT_PUBLIC_URL: `http://127.0.0.1:${port}`,
       ATLAS_AGENT_PORT: String(port),
       ATLAS_OAUTH_STATE_PATH: join(dir, "oauth.json"),

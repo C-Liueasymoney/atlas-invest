@@ -6,8 +6,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { createAgentApp } from "../lib/agent/server";
+import { signSession } from "../lib/auth/session";
 
-it("real browser consent preserves Origin and completes PKCE", async () => {
+it("signed-in browser connects without another password and completes PKCE", async () => {
   const original = { ...process.env };
   const dir = await mkdtemp(join(tmpdir(), "atlas-consent-browser-"));
   const probe = createServer();
@@ -17,6 +18,7 @@ it("real browser consent preserves Origin and completes PKCE", async () => {
   const base = `http://127.0.0.1:${port}`;
   process.env.DATA_MODE = "demo";
   process.env.OWNER_PASSWORD = "browser-consent-test-password";
+  process.env.SESSION_SECRET = "browser-session-signing-secret-long-enough";
   process.env.ATLAS_OAUTH_STATE_PATH = join(dir, "oauth.json");
   const { app } = createAgentApp(new URL(base));
   const server = app.listen(port, "127.0.0.1");
@@ -43,13 +45,21 @@ it("real browser consent preserves Origin and completes PKCE", async () => {
       code_challenge: createHash("sha256").update(verifier).digest("base64url"),
       code_challenge_method: "S256",
     });
-    const page = await browser.newPage();
+    const context = await browser.newContext();
+    await context.addCookies([
+      {
+        name: "atlas_session",
+        value: signSession(process.env.SESSION_SECRET),
+        url: base,
+      },
+    ]);
+    const page = await context.newPage();
     await page.goto(base + "/authorize?" + params);
-    await page.getByLabel("个人工作台密码").fill(process.env.OWNER_PASSWORD);
+    expect(await page.locator('input[type="password"]').count()).toBe(0);
     const submitted = page.waitForRequest(
       (r) => r.url() === base + "/agent/consent" && r.method() === "POST",
     );
-    await page.getByRole("button", { name: "授权连接" }).click();
+    await page.getByRole("button", { name: "连接" }).click();
     const post = await submitted;
     expect(post.headers().origin).toBe(base);
     await page.waitForURL(base + "/callback?**", { timeout: 5000 });
@@ -69,6 +79,16 @@ it("real browser consent preserves Origin and completes PKCE", async () => {
     });
     expect(response.status).toBe(200);
     expect((await response.json()).access_token).toBeTruthy();
+    const guest = await browser.newContext();
+    const guestPage = await guest.newPage();
+    await guestPage.goto(base + "/authorize?" + params);
+    expect(await guestPage.locator('input[type="password"]').count()).toBe(0);
+    await guestPage.getByRole("button", { name: "连接", exact: true }).click();
+    await guestPage.waitForURL(base + "/login?**");
+    const back = new URL(new URL(guestPage.url()).searchParams.get("next")!);
+    expect(back.origin).toBe(base);
+    expect(back.pathname).toBe("/agent/consent");
+    expect(back.searchParams.get("request")).toBeTruthy();
   } finally {
     await browser.close();
     await new Promise<void>((resolve) => server.close(() => resolve()));

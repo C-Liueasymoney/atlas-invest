@@ -5,18 +5,22 @@ import { join } from "node:path";
 import { createHash } from "node:crypto";
 import type { Server } from "node:http";
 import { createAgentApp } from "../lib/agent/server";
+import { signSession } from "../lib/auth/session";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { createHolding, createTask } from "../lib/investment/service";
 let server: Server, base: string, dir: string;
 const publicUrl = new URL("http://127.0.0.1:3001");
 const password = "test-owner-password-123";
+const sessionSecret = "http-test-session-signing-secret-long-enough";
+const previousSessionSecret = process.env.SESSION_SECRET;
 beforeEach(async () => {
   dir = await mkdtemp(join(tmpdir(), "atlas-agent-http-"));
   process.env.DATA_MODE = "demo";
   process.env.ATLAS_OAUTH_STATE_PATH = join(dir, "oauth.json");
   process.env.ATLAS_INVESTMENT_PATH = join(dir, "investment.json");
   process.env.OWNER_PASSWORD = password;
+  process.env.SESSION_SECRET = sessionSecret;
   const { app } = createAgentApp(publicUrl);
   server = await new Promise<Server>((resolve, reject) => {
     const s = app.listen(0, "127.0.0.1", (error) =>
@@ -34,6 +38,8 @@ afterEach(async () => {
   delete process.env.ATLAS_OAUTH_STATE_PATH;
   delete process.env.ATLAS_INVESTMENT_PATH;
   delete process.env.OWNER_PASSWORD;
+  if (previousSessionSecret === undefined) delete process.env.SESSION_SECRET;
+  else process.env.SESSION_SECRET = previousSessionSecret;
 });
 const post = (
   path: string,
@@ -82,14 +88,38 @@ async function login(scope = "research:read research:submit offline_access") {
     cookie = auth.headers.get("set-cookie")!.split(";")[0];
   const bad = await post(
     "/agent/consent",
-    { request, password },
+    { request },
     { cookie, origin: "https://evil.example" },
   );
   expect(bad.status).toBe(403);
+  const missingSession = await post(
+    "/agent/consent",
+    { request },
+    { cookie, origin: publicUrl.origin },
+  );
+  expect(missingSession.status).toBe(303);
+  expect(new URL(missingSession.headers.get("location")!).pathname).toBe(
+    "/login",
+  );
+  const expired = await post(
+    "/agent/consent",
+    { request },
+    {
+      cookie:
+        cookie +
+        "; atlas_session=" +
+        signSession(sessionSecret, Date.now() - 2 * 86400000),
+      origin: publicUrl.origin,
+    },
+  );
+  expect(expired.status).toBe(303);
   const consent = await post(
     "/agent/consent",
-    { request, password },
-    { cookie, origin: publicUrl.origin },
+    { request },
+    {
+      cookie: cookie + "; atlas_session=" + signSession(sessionSecret),
+      origin: publicUrl.origin,
+    },
   );
   expect(consent.status).toBe(302);
   const code = new URL(consent.headers.get("location")!).searchParams.get(

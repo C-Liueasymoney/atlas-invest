@@ -60,7 +60,7 @@ codex mcp add atlas-invest --url https://47.101.193.94/mcp
 codex mcp login atlas-invest --scopes research:read,research:submit,offline_access
 ```
 
-或在检出仓库后设置 `ATLAS_AGENT_PUBLIC_URL` 并执行 `npm run agent:connect`。首次授权在Atlas页面输入自己的工作台密码，确认允许读取研究任务与保存对应结果；不要把密码或长期令牌贴进提示词。
+或在检出仓库后设置 `ATLAS_AGENT_PUBLIC_URL` 并执行 `npm run agent:connect`。首次连接复用网站已有登录会话，不再在Atlas连接页输入密码；确认允许读取研究任务与保存对应结果；不要把密码或长期令牌贴进提示词。
 
 新会话应看到：
 
