@@ -27,7 +27,7 @@ for file in source.rglob('*'):
     dest.parent.mkdir(parents=True,exist_ok=True)
     shutil.copy2(file,dest)
 PY
-npm ci --include=dev --no-audit --no-fund
+NODE_OPTIONS=--max-old-space-size=384 npm ci --include=dev --no-audit --no-fund --maxsockets=2 --fetch-timeout=20000 --fetch-retries=1
 systemctl stop atlas-web
 # Keep a restart path even if building or migrating fails.
 rollback_failure() {
