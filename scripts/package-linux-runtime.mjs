@@ -11,8 +11,10 @@ if (process.platform !== "linux" || process.arch !== "x64")
 const temporary = await mkdtemp(join(tmpdir(), "atlas-linux-release-"));
 const output = resolve(".atlas/release");
 try {
-  const source = execFileSync("git", ["archive", "--format=tar", "HEAD"]);
-  execFileSync("tar", ["-xf", "-", "-C", temporary], { input: source });
+  const source = join(temporary, "source.tar");
+  execFileSync("git", ["archive", "--format=tar", "--output", source, "HEAD"]);
+  execFileSync("tar", ["-xf", source, "-C", temporary]);
+  await rm(source);
   await mkdir(join(temporary, "apps/web/.next"), { recursive: true });
   await cp(
     "apps/web/.next/standalone",

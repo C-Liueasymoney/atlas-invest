@@ -15,7 +15,7 @@ jobs:
             POSTGRES_DB: atlas_test,
           }
         ports: ["5432:5432"]
-        options: --health-cmd "pg_isready -U atlas" --health-interval=5s --health-retries=10
+        options: --health-cmd "pg_isready -U atlas -d atlas_test" --health-interval=5s --health-retries=10
     env:
       DATABASE_URL: postgresql://atlas:atlas_ci@127.0.0.1:5432/atlas_test
       TEST_DATABASE_URL: postgresql://atlas:atlas_ci@127.0.0.1:5432/atlas_test
@@ -52,7 +52,7 @@ jobs:
             POSTGRES_DB: atlas_test,
           }
         ports: ["5432:5432"]
-        options: --health-cmd "pg_isready -U atlas" --health-interval=5s --health-retries=10
+        options: --health-cmd "pg_isready -U atlas -d atlas_test" --health-interval=5s --health-retries=10
     env:
       TEST_DATABASE_URL: postgresql://atlas:atlas_ci@127.0.0.1:5432/atlas_test
     steps:

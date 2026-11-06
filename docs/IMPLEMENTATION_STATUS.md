@@ -241,3 +241,5 @@ GitHub连接仍异常，普通HTTPS、HTTP/1.1重试分别报framing error、443
 - 8ebe731服务器隔离构建期间再次出现公网与Workbench整体超时，新版本未切换；停止构建命令亦超时。控制台查询实例仍Running，备用ecs:RunCommand返回Forbidden.RAM，已请求用户通过控制台重启实例或补充云助手权限。此前26d4653为已验证运行版本，旧构建、源码和加密数据库备份均保留。
 - 改为GitHub Linux CI产物部署，不再在该2GB实例执行Next构建。检查远端CI发现原有PostgreSQL容器health-cmd单引号被Runner参数解析器拆开，产生unknown shorthand flag U，尚未进入代码检查；修正为双引号。
 - Web完整检查通过后打包已提交源码、Linux Next standalone及纯Node MCP/迁移工具，排除本地状态/真实.env，附commit与SHA256并上传限期artifact。构建与部署运行状态以GitHub及恢复后的服务器实测为准，不把本地测试冒充远端CI通过。
+
+- 用户完成实例重启后，网站/MCP/PG/定时器恢复，完整公网会话与行情检查通过。GitHub CI现已通过Web lint/typecheck/139测试与production build、21条浏览器流程，Collector也通过；仅产物打包因git archive输出超过Node默认1MB缓冲失败，已改为文件落盘再解包，不再将源码tar缓冲到stdout。
